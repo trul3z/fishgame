@@ -1,0 +1,100 @@
+{
+  "trade": [
+    {
+      "name": "Fishing Rod Upgrade",
+      "type": "gear",
+      "effect": "Increases fishing success rate",
+      "gold_value": 150,
+      "description": "Upgrade your fishing rod for better performance and more catches.",
+      "trigger": {
+        "action": "add_gear",
+        "target": "Sturdy Rod"
+      }
+    },
+    {
+      "name": "Venture Out",
+      "type": "New Location",
+      "effect": "Unlock a random new fishing location",
+      "gold_value": 200,
+      "description": "Pay a fee to unlock a new fishing location, expanding your fishing opportunities.",
+      "trigger": {
+        "action": "unlock_locations",
+        "target": "trade_deck_locations"
+      }
+    },
+    {
+      "name": "Health Potion",
+      "type": "item",
+      "effect": "Restores health",
+      "gold_value": 50,
+      "description": "A potion that restores health, useful after a tough fishing battle.",
+      "trigger": {
+        "action": "add_item",
+        "target": "Health Potion"
+      }
+    },
+    {
+      "name": "Lucky Necklace",
+      "type": "gear",
+      "effect": "Increases luck",
+      "gold_value": 100,
+      "description": "A charm said to bring good fortune to those who wear it while fishing.",
+      "trigger": {
+        "action": "add_gear",
+        "target": "Lucky Necklace"
+      }
+    },
+    {
+      "name": "Fishing Guide",
+      "type": "knowledge",
+      "effect": "Permanently increases luck",
+      "gold_value": 300,
+      "description": "Ancient knowledge that improves your fishing intuition.",
+      "trigger": {
+        "action": "increase_stat",
+        "target": "luck",
+        "amount": 5
+      }
+    },
+    {
+      "name": "Bait Bundle",
+      "type": "item",
+      "effect": "Improves fishing success",
+      "gold_value": 75,
+      "description": "A collection of premium bait to attract better fish.",
+      "trigger": {
+        "action": "add_item",
+        "target": "Bait Bundle"
+      }
+    },
+    {
+      "name": "Master Fisher's Blessing",
+      "type": "knowledge",
+      "effect": "Permanently increases multiple stats",
+      "gold_value": 500,
+      "description": "A blessing from the master fisherman, said to enhance your skills.",
+      "trigger": [
+        {
+          "action": "increase_stat",
+          "target": "luck",
+          "amount": 5
+        },
+        {
+          "action": "increase_stat",
+          "target": "attack",
+          "amount": 3
+        },
+        {
+          "action": "increase_stat",
+          "target": "defense",
+          "amount": 3
+        },
+        {
+          "action": "increase_stat",
+          "target": "speed",
+          "amount": 3
+        }
+      ]
+    }
+  ]
+}

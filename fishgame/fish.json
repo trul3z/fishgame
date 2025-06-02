@@ -1,0 +1,64 @@
+{
+  "fish": [
+    {
+      "name": "Common Minnow",
+      "rarity": 10,
+      "type": "Common",
+      "min_size": 2,
+      "max_size": 4,
+      "avg_size": 3,
+      "gold_value": 5,
+      "food_value": 1,
+      "description": "A tiny silver fish that swims in schools",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Brook Trout",
+      "rarity": 20,
+      "type": "Common",
+      "min_size": 8,
+      "max_size": 12, 
+      "avg_size": 10,
+      "gold_value": 15,
+      "food_value": 4,
+      "description": "A speckled freshwater fish with vibrant colors",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Bass",
+      "rarity": 30,
+      "type": "Common",
+      "min_size": 12,
+      "max_size": 18,
+      "avg_size": 15,
+      "gold_value": 25,
+      "food_value": 8,
+      "description": "Boom boom super bass",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Golden Carp",
+      "type": "Rare",
+      "rarity": 80,
+      "min_size": 15,
+      "max_size": 25,
+      "avg_size": 20,
+      "gold_value": 200,
+      "food_value": 10,
+      "description": "A rare golden fish said to bring good fortune",
+      "fish_effect": "carp_luck_boost"
+    },
+    {
+      "name": "Dragon Fin",
+      "rarity": 90,
+      "type": "Dragon",
+      "min_size": 25,
+      "max_size": 40,
+      "avg_size": 30,
+      "gold_value": 200,
+      "food_value": 50,
+      "description": "A legendary fire-breathing fish with scales like armor",
+      "fish_effect": "fire_resistance"
+    }
+  ]
+}
