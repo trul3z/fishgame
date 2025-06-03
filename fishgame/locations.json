@@ -1,0 +1,49 @@
+{
+  "locations": [
+    {
+      "name": "Village Pond",
+      "description": "A peaceful pond near the village where children learn to fish",
+      "fish types": ["Common", "Rare"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["Common"],
+      "fish spawn chance": 0.7,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.05,
+      "enemy spawn chance": 0.1,
+      "catch nothing chance": 0.05,
+      "fishing license required": false,
+      "Unlocked by default": true,
+      "unlock condition": "None"
+    },
+    {
+      "name": "Village Well",
+      "description": "A deep well in the village, rumored to be home to magical fish",
+      "fish types": ["Common"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["Common"],
+      "fish spawn chance": 0.2,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.2,
+      "enemy spawn chance": 0.3,
+      "catch nothing chance": 0.2,
+      "fishing license required": false,
+      "Unlocked by default": true,
+      "unlock condition": "None"
+    },
+    {
+      "name": "Ocean Shore",
+      "description": "A sandy beach where the ocean meets the land, teeming with life",
+      "fish types": ["Common", "Rare"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["Common", "Ocean"],
+      "fish spawn chance": 0.5,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.1,
+      "enemy spawn chance": 0.2,
+      "catch nothing chance": 0.1,
+      "fishing license required": false,
+      "Unlocked by default": false,
+      "unlock condition": "Trade deck"
+    }
+  ]
+}

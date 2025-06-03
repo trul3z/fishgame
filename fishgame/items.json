@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "name": "Old Boot",
+      "rarity": 10,
+      "gold_value": 5,
+      "description": "Someone's lost boot. Smells terrible.",
+      "item_type": "junk",
+      "effect": "none",
+      "quantity": 2
+    },
+    {
+      "name": "Rusty Hook",
+      "rarity": 50,
+      "gold_value": 5,
+      "description": "An old fishing hook, still sharp.",
+      "item_type": "junk",
+      "effect": "none",
+      "quantity": 4
+    },
+    {
+      "name": "Treasure Chest",
+      "rarity": 80,
+      "gold_value": 150,
+      "description": "A waterlogged chest containing ancient coins!",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 5
+    },
+    {
+      "name": "Ancient Scroll",
+      "rarity": 70,
+      "gold_value": 100,
+      "description": "Contains forgotten fishing secrets.",
+      "item_type": "consumable",
+      "effect": "increase any skill by 3",
+      "quantity": 5
+    },
+    {
+      "name": "Bait Bundle",
+      "rarity": 30,
+      "gold_value": 10,
+      "description": "A bundle of high-quality bait that attracts more fish.",
+      "item_type": "consumable",
+      "effect": "increased_catch_rate for the next 5 catches",
+      "quantity": 5
+    }
+  ]
+}
