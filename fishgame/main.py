@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox 
 import json
 import random
+import os
 
 class Fish:
     def __init__(self, fish_data):
@@ -50,8 +51,9 @@ class Location:
             return True
         
         if self.unlock_condition == "Trade deck":
-            # Check if player has completed the "Venture Out" trade
-            return "Venture Out" in player_trades_completed
+            # Check if this specific location has been unlocked
+            location_key = f"unlocked_{self.name.lower().replace(' ', '_')}"
+            return location_key in player_trades_completed
         
         return False
     
@@ -62,11 +64,11 @@ class Item:
     def __init__(self, item_data):
         self.name = item_data["name"]
         self.rarity = item_data["rarity"]
-        self.value = item_data["value"]
+        self.value = item_data["gold_value"]
         self.description = item_data["description"]
         self.item_type = item_data["item_type"]
         self.effect = item_data["effect"]
-        self.quantity = item_data["quantity"]  # How many exist in the world
+        self.quantity = item_data["quantity"] 
 
     def __str__(self):
         return f"{self.name} (Type: {self.item_type}, Value: {self.value}g, World qty: {self.quantity})"
@@ -126,67 +128,111 @@ class Trade:
         self.trade_type = trade_data["type"]
         self.effect = trade_data["effect"]
         self.gold_value = trade_data["gold_value"]
-        self.description = trade_data["description"]
-        self.trigger = trade_data["trigger"]  # Now a dictionary with structured data
+        self.trigger = trade_data["trigger"]  # Can be a single dict or list of dicts
     
     def execute_trigger(self, player, game):
-        """Execute the trigger action based on structured trigger data"""
-        action = self.trigger["action"]
-        target = self.trigger["target"]
+        """Execute the trigger action(s) based on structured trigger data"""
+        results = []
         
-        if action == "add_gear":
-            # Find gear in gear.json and add to player inventory
-            for gear_data in game.gear_data['gear']:
-                if gear_data['name'] == target:
-                    gear = Gear(gear_data)
-                    player.add_gear(gear)
-                    return f"{target} added to inventory!"
-            return f"Gear '{target}' not found!"
+        # Handle both single trigger and multiple triggers
+        triggers = self.trigger if isinstance(self.trigger, list) else [self.trigger]
         
-        elif action == "add_item":
-            # Find item in items.json and add to player inventory
-            for item_data in game.item_data['items']:
-                if item_data['name'] == target:
-                    item = Item(item_data)
-                    player.add_item(item)
-                    return f"{target} added to inventory!"
-            return f"Item '{target}' not found!"
+        for trigger in triggers:
+            action = trigger["action"]
+            target = trigger["target"]
+            
+            if action == "add_gear":
+                # Find gear in gear.json and add to player inventory
+                for gear_data in game.gear_data['gear']:
+                    if gear_data['name'] == target:
+                        gear = Gear(gear_data)
+                        player.add_gear(gear)
+                        results.append(f"{target} added to inventory!")
+                        break
+                else:
+                    results.append(f"Gear '{target}' not found!")
+            
+            elif action == "add_item":
+                # Find item in items.json and add to player inventory
+                for item_data in game.item_data['items']:
+                    if item_data['name'] == target:
+                        item = Item(item_data)
+                        player.add_item(item)
+                        results.append(f"{target} added to inventory!")
+                        break
+                else:
+                    results.append(f"Item '{target}' not found!")
+            
+            elif action == "increase_stat":
+                # Increase player stat by specified amount
+                amount = trigger.get("amount", 1)
+                if target == "luck":
+                    player.base_luck += amount
+                    results.append(f"Luck increased by {amount}!")
+                elif target == "attack":
+                    player.base_attack += amount
+                    results.append(f"Attack increased by {amount}!")
+                elif target == "defense":
+                    player.base_defense += amount
+                    results.append(f"Defense increased by {amount}!")
+                elif target == "speed":
+                    player.base_speed += amount
+                    results.append(f"Speed increased by {amount}!")
+                elif target == "health":
+                    player.max_health += amount
+                    player.health += amount
+                    results.append(f"Max health increased by {amount}!")
+                else:
+                    results.append(f"Unknown stat: {target}")
+            
+            elif action == "unlock_location":
+                # NEW: Handle random location unlocking for "Venture Out" trade
+                if self.name == "Venture Out":
+                    # Find all locked locations that can be unlocked by trade deck
+                    available_to_unlock = []
+                    for loc_data in game.location_data['locations']:
+                        location = Location(loc_data)
+                        if (not location.unlocked_by_default and 
+                            location.unlock_condition == "Trade deck" and 
+                            not location.is_unlocked(player.completed_trades)):
+                            available_to_unlock.append(location.name)
+                    
+                    if available_to_unlock:
+                        # Pick ONE random location to unlock
+                        import random
+                        unlocked_location = random.choice(available_to_unlock)
+                        
+                        # Add a specific unlock key for this location
+                        unlock_key = f"unlocked_{unlocked_location.lower().replace(' ', '_')}"
+                        player.completed_trades.append(unlock_key)
+                        
+                        results.append(f"New fishing location unlocked: {unlocked_location}!")
+                    else:
+                        results.append("No new locations to unlock!")
+                else:
+                    # Legacy behavior for other trades
+                    player.completed_trades.append(self.name)
+                    results.append("New fishing location unlocked!")
+            
+            elif action == "heal":
+                # Heal player by amount or percentage
+                amount = trigger.get("amount", 50)
+                player.health = min(player.max_health, player.health + amount)
+                results.append(f"Healed for {amount} HP!")
+            
+            elif action == "add_gold":
+                # Give player gold
+                amount = trigger.get("amount", 100)
+                player.gold += amount
+                results.append(f"Gained {amount} gold!")
+            
+            else:
+                results.append(f"Unknown action: {action}")
         
-        elif action == "increase_stat":
-            # Increase player stat by specified amount
-            amount = self.trigger.get("amount", 1)
-            if target == "luck":
-                player.base_luck += amount
-                return f"Luck increased by {amount}!"
-            elif target == "skill":
-                player.base_skill += amount
-                return f"Skill increased by {amount}!"
-            elif target == "health":
-                player.max_health += amount
-                player.health += amount
-                return f"Max health increased by {amount}!"
-        
-        elif action == "unlock_locations":
-            # Add completed trade to unlock locations
-            player.completed_trades.append(self.name)
-            return "New fishing locations unlocked!"
-        
-        elif action == "heal":
-            # Heal player by amount or percentage
-            amount = self.trigger.get("amount", 50)
-            player.health = min(player.max_health, player.health + amount)
-            return f"Healed for {amount} HP!"
-        
-        elif action == "add_gold":
-            # Give player gold
-            amount = self.trigger.get("amount", 100)
-            player.gold += amount
-            return f"Gained {amount} gold!"
-        
-        return f"Unknown action: {action}"
+        return " ".join(results)
     
     def __str__(self):
-        return f"{self.name} - {self.gold_value}g\n{self.description}\nEffect: {self.effect}"
+        return f"{self.name} - {self.gold_value}g\nEffect: {self.effect}"
 
 class Player:
     def __init__(self):
@@ -200,7 +246,7 @@ class Player:
         self.xp = 0
         
         # Base stats (before equipment bonuses)
-        self.base_luck = 3
+        self.base_luck = 0
         self.base_attack = 3
         self.base_defense = 3
         self.base_speed = 3
@@ -422,27 +468,6 @@ class Player:
             "speed": total_speed
         }
     
-    def use_item(self, item):
-        """Use a consumable item"""
-        if item.item_type == "consumable":
-            if "restore" in item.effect and "health" in item.effect:
-                # Extract health amount (e.g., "restore 50 health")
-                import re
-                health_match = re.search(r'restore (\d+) health', item.effect)
-                if health_match:
-                    heal_amount = int(health_match.group(1))
-                    self.health = min(self.max_health, self.health + heal_amount)
-                    self.inventory.remove(item)
-                    return f"Restored {heal_amount} health!"
-            
-            elif "increase" in item.effect and "skill" in item.effect:
-                # Ancient Scroll effect
-                self.base_skill += 3
-                self.inventory.remove(item)
-                return "Your fishing skill increased by 3!"
-        
-        return "Item cannot be used."
-
     def eat_fish(self, fish):
         """Eat a fish to restore energy"""
         if fish in self.inventory:
@@ -480,29 +505,31 @@ class FishingGame:
         self.quit_button.pack(pady=10)
 
     def load_json_data(self):
-        """Load all the JSON files"""
+        """Load all the JSON files from the script's directory"""
         try:
-            with open("C:/Users/tman8/Desktop/fishgame/fish.json", "r") as f:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+
+            with open(os.path.join(base_dir, "fish.json"), "r") as f:
                 self.fish_data = json.load(f)
             print("✅ Fish data loaded successfully")
 
-            with open("C:/Users/tman8/Desktop/fishgame/items.json", "r") as f:
+            with open(os.path.join(base_dir, "items.json"), "r") as f:
                 self.item_data = json.load(f)
             print("✅ Item data loaded successfully")
 
-            with open("C:/Users/tman8/Desktop/fishgame/gear.json", "r") as f:
+            with open(os.path.join(base_dir, "gear.json"), "r") as f:
                 self.gear_data = json.load(f)
             print("✅ Gear data loaded successfully")
             
-            with open("C:/Users/tman8/Desktop/fishgame/enemies.json", "r") as f:
+            with open(os.path.join(base_dir, "enemies.json"), "r") as f:
                 self.enemy_data = json.load(f)
             print("✅ Enemy data loaded successfully")
             
-            with open("C:/Users/tman8/Desktop/fishgame/locations.json", "r") as f:
+            with open(os.path.join(base_dir, "locations.json"), "r") as f:
                 self.location_data = json.load(f)
             print("✅ Location data loaded successfully")
             
-            with open("C:/Users/tman8/Desktop/fishgame/trade.json", "r") as f:
+            with open(os.path.join(base_dir, "trade.json"), "r") as f:
                 self.trade_data = json.load(f)
             print("✅ Trade data loaded successfully")
             
@@ -533,27 +560,55 @@ class FishingGame:
     
         if not location:
             return "Location not found!"
-    
+
+        # Get player luck for calculations
+        player_luck = self.player.get_total_stats()['luck'] if hasattr(self, 'player') and self.player else 0
+
+        # CHECK FOR BAIT BOOST AND APPLY TO SPAWN CHANCES
+        bait_multiplier = 1.0
+        if hasattr(self.player, 'bait_boost_remaining') and self.player.bait_boost_remaining > 0:
+            bait_multiplier = 1.3  # 30% better catch rates
+            self.player.bait_boost_remaining -= 1
+            remaining = self.player.bait_boost_remaining
+            # This message will be returned along with the catch result
+            bait_active_msg = f" 🎣 Bait boost active! ({remaining} uses remaining)"
+        else:
+            bait_active_msg = ""
+
+        # Apply bait boost to location spawn chances
+        boosted_fish_chance = location.fish_spawn_chance * bait_multiplier
+        boosted_item_chance = location.item_spawn_chance * bait_multiplier  
+        boosted_gear_chance = location.gear_spawn_chance * bait_multiplier
+        # Don't boost enemy chance - bait shouldn't attract more enemies!        
+
         # Stage 1: What happens when you cast your line? (cumulative probability)
         rand = random.random()
         cumulative = 0
     
-        cumulative += location.fish_spawn_chance
+        cumulative += boosted_fish_chance
         if rand < cumulative:
             return self.catch_fish(location)
     
-        cumulative += location.item_spawn_chance
+        cumulative += boosted_item_chance
         if rand < cumulative:
             return self.catch_item(location)
     
-        cumulative += location.gear_spawn_chance
+        cumulative += boosted_gear_chance
         if rand < cumulative:
             return self.catch_gear(location)
     
         cumulative += location.enemy_spawn_chance
         if rand < cumulative:
             return "🦈 Enemy encountered!"
+
+        # Apply luck reduction to "nothing" chance (1% per luck point, max 15% reduction)
+        luck_nothing_reduction = min(0.15, player_luck * 0.01)
+        adjusted_nothing_chance = max(0.05, location.catch_nothing_chance - luck_nothing_reduction)
     
+        cumulative += adjusted_nothing_chance
+        if rand < cumulative:
+            return "🎣 Nothing caught... try again!"
+
         # Catch nothing (remaining probability)
         return "🎣 Nothing caught... try again!"
 
@@ -568,7 +623,9 @@ class FishingGame:
         if not available_enemies:
             return "🦈 Enemy encountered but none available!"
         
-        enemy_data = random.choice(available_enemies)
+        # Weighted random selection by rarity (lower rarity = more common)
+        weights = [max(1, 1000 - enemy.get('rarity', 1)) for enemy in available_enemies]
+        enemy_data = random.choices(available_enemies, weights=weights)[0]
         enemy = Enemy(enemy_data)
         
         # Start combat
@@ -978,18 +1035,185 @@ class FishingGame:
         if hasattr(self, 'combat_log'):
             delattr(self, 'combat_log')
 
-    def show_trade_deck(self):
-        """Show 3 random trades for the player to choose from"""
-        available_trades = random.sample(self.trade_data['trade'], 3)
-        trades = [Trade(trade_data) for trade_data in available_trades]
+    def open_trade_window(self):
+        """Open trade window to buy trades with gold"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
 
-        print("🎴 TRADE DECK - Choose wisely!")
-        print("=" * 40)
-        for i, trade in enumerate(trades, 1):
-            print(f"{i}. {trade}")
-            print("-" * 30)
+        # Check if player has energy to trade
+        if not self.player.can_fish():  # Using can_fish() since it checks energy > 0
+            messagebox.showwarning("No Energy", "You need at least 1 energy to trade!")
+            return
 
-        return trades
+        # Generate 3 random trade options only if we don't have them already
+        if not hasattr(self, 'current_trade_options') or not self.current_trade_options:
+            if len(self.trade_data['trade']) < 3:
+                messagebox.showwarning("No Trades", "Not enough trades available!")
+                return
+            
+            available_trades = random.sample(self.trade_data['trade'], 3)
+            self.current_trade_options = [Trade(trade_data) for trade_data in available_trades]
+
+        # Create new window
+        self.trade_window = tk.Toplevel(self.root)
+        self.trade_window.title("Trade Deck")
+        self.trade_window.geometry("800x700")
+        self.trade_window.configure(bg="#F5F5DC")
+
+        # Window title
+        title_label = tk.Label(self.trade_window, text="🎴 Trade Deck - Choose Wisely!", 
+                        font=("Helvetica", 18, "bold"), bg="#F5F5DC")
+        title_label.pack(pady=10)
+
+        # Current gold and energy display
+        info_frame = tk.Frame(self.trade_window, bg="#F5F5DC")
+        info_frame.pack(pady=5)
+
+        gold_label = tk.Label(info_frame, text=f"Current Gold: {self.player.gold}g", 
+                        font=("Helvetica", 14), bg="#F5F5DC", fg="green")
+        gold_label.pack(side=tk.LEFT, padx=10)
+
+        energy_label = tk.Label(info_frame, text=f"Energy: {self.player.energy}/{self.player.max_energy}", 
+                        font=("Helvetica", 14), bg="#F5F5DC", fg="blue")
+        energy_label.pack(side=tk.LEFT, padx=10)
+
+        # Energy cost info
+        cost_label = tk.Label(self.trade_window, text="💡 Trading costs 1 energy per session", 
+                        font=("Helvetica", 11), bg="#F5F5DC", fg="gray")
+        cost_label.pack(pady=5)
+
+        # Trade options frame
+        trades_frame = tk.Frame(self.trade_window, bg="#F5F5DC")
+        trades_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        # Create 3 trade option cards
+        for i, trade in enumerate(self.current_trade_options):
+            self.create_trade_card(trades_frame, trade, i)
+
+        # Close button
+        close_button = tk.Button(self.trade_window, text="Close", 
+                            font=("Helvetica", 12), bg="#757575", fg="white",
+                            command=self.trade_window.destroy)
+        close_button.pack(pady=10)
+
+    def create_trade_card(self, parent, trade, index):
+        """Create a trade card UI element"""
+        # Main card frame
+        card_frame = tk.Frame(parent, bg="#FFFFFF", relief=tk.RAISED, bd=2)
+        card_frame.pack(fill=tk.X, pady=10, padx=10)
+        
+        # Trade header
+        header_frame = tk.Frame(card_frame, bg="#E3F2FD")
+        header_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        trade_name = tk.Label(header_frame, text=f"🎴 {trade.name}", 
+                            font=("Helvetica", 14, "bold"), bg="#E3F2FD")
+        trade_name.pack(side=tk.LEFT)
+        
+        trade_type = tk.Label(header_frame, text=f"[{trade.trade_type}]", 
+                            font=("Helvetica", 12), bg="#E3F2FD", fg="gray")
+        trade_type.pack(side=tk.RIGHT)
+        
+        # Trade effect description
+        effect_label = tk.Label(card_frame, text=trade.effect, 
+                            font=("Helvetica", 12), bg="#FFFFFF", 
+                            wraplength=400, justify=tk.LEFT)
+        effect_label.pack(anchor=tk.W, padx=10, pady=5)
+        
+        # Bottom frame with price and button
+        bottom_frame = tk.Frame(card_frame, bg="#FFFFFF")
+        bottom_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Price display
+        price_label = tk.Label(bottom_frame, text=f"💰 Cost: {trade.gold_value}g", 
+                            font=("Helvetica", 12, "bold"), bg="#FFFFFF", fg="green")
+        price_label.pack(side=tk.LEFT)
+        
+        # Buy button
+        can_afford = self.player.gold >= trade.gold_value
+        button_color = "#4CAF50" if can_afford else "#CCCCCC"
+        button_text = "💰 Buy This Trade" if can_afford else "Can't Afford"
+        
+        buy_button = tk.Button(bottom_frame, text=button_text, 
+                            font=("Helvetica", 12), bg=button_color, fg="white",
+                            command=lambda t=trade: self.execute_trade(t),
+                            state=tk.NORMAL if can_afford else tk.DISABLED)
+        buy_button.pack(side=tk.RIGHT)
+
+    def execute_trade(self, trade):
+        """Execute a selected trade"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Check if player can afford the trade
+        if self.player.gold < trade.gold_value:
+            messagebox.showwarning("Cannot Afford", f"You need {trade.gold_value}g but only have {self.player.gold}g!")
+            return
+        
+        # Check if player has energy
+        if not self.player.can_fish():
+            messagebox.showwarning("No Energy", "You need at least 1 energy to trade!")
+            return
+        
+        # Confirm trade
+        confirm = messagebox.askyesno("Confirm Trade", 
+                                    f"Buy '{trade.name}' for {trade.gold_value}g?\n\nEffect: {trade.effect}\n(Costs 1 energy)")
+        if not confirm:
+            return
+        
+        # Use energy for trading
+        if not self.player.use_energy(1):
+            messagebox.showwarning("No Energy", "You don't have enough energy to trade!")
+            return
+        
+        # Deduct gold
+        self.player.gold -= trade.gold_value
+        
+        # Execute trade effect
+        result = trade.execute_trigger(self.player, self)
+        
+        # Add to completed trades for location unlocking
+        if trade.name not in self.player.completed_trades:
+            self.player.completed_trades.append(trade.name)
+
+        # Clear current trade options so new ones are generated next time
+        self.current_trade_options = []
+
+        # Log the trade
+        self.log_message(f"🎴 Traded for '{trade.name}' for {trade.gold_value}g! (-1 energy)")
+        self.log_message(f"   ✨ {result}")
+        
+        # Update available locations if needed
+        if "unlock_locations" in str(trade.trigger):
+            self.update_location_dropdown()
+        
+        # Check for game over due to energy loss
+        if self.player.is_game_over():
+            self.log_message("💀 GAME OVER! You ran out of energy!")
+            self.trade_window.destroy()
+            self.root.after(1000, self.show_game_over_screen)
+            return
+        
+        # Update displays
+        self.update_player_info()
+        
+        # Close trade window and show success
+        self.trade_window.destroy()
+        messagebox.showinfo("Trade Complete", f"Successfully traded for '{trade.name}'!\n\n{result}")
+
+    def update_location_dropdown(self):
+        """Update the location dropdown with newly unlocked locations"""
+        if hasattr(self, 'location_dropdown'):
+            # Get updated available locations
+            available_locations = self.get_available_locations()
+            
+            # Update dropdown values
+            self.location_dropdown['values'] = available_locations
+            
+            # If current selection is not in new list, set to first available
+            current_location = self.location_var.get()
+            if current_location not in available_locations and available_locations:
+                self.location_var.set(available_locations[0])
 
     def start_game(self):
         """Start character creation process"""
@@ -1170,7 +1394,7 @@ class FishingGame:
                                 font=("Helvetica", 12), bg="#757575", fg="white",
                                 command=self.sell_window.destroy)
         close_button.pack(side=tk.LEFT, padx=5)
-    
+
     def select_all_items(self):
         """Select all items in the sell listbox"""
         if self.sellable_items:
@@ -1756,8 +1980,6 @@ class FishingGame:
                                 font=("Helvetica", 10), bg="#FFE6E6", fg="gray")
         instruction_label.pack(pady=2)
 
-
-
     # Gear listbox with scrollbar
         listbox_frame = tk.Frame(right_frame, bg="#FFE6E6")
         listbox_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -1766,245 +1988,1106 @@ class FishingGame:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.gear_listbox = tk.Listbox(listbox_frame, font=("Helvetica", 10), 
-                                   yscrollcommand=scrollbar.set)
+                               yscrollcommand=scrollbar.set, selectmode=tk.EXTENDED)
         self.gear_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.gear_listbox.yview)
 
     # Populate gear list
         self.refresh_gear_list()
 
-    # Gear action buttons
+        # Gear action buttons (updated for batch operations)
         button_frame = tk.Frame(right_frame, bg="#FFE6E6")
         button_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        equip_btn = tk.Button(button_frame, text="⚔️ Equip Selected", 
-                         font=("Helvetica", 12), bg="#4CAF50", fg="white",
-                         command=self.equip_selected_gear)
-        equip_btn.pack(side=tk.LEFT, padx=5)
+        # First row of buttons
+        button_row1 = tk.Frame(button_frame, bg="#FFE6E6")
+        button_row1.pack(fill=tk.X, pady=2)
 
-        unequip_btn = tk.Button(button_frame, text="📤 Unequip Selected", 
-                           font=("Helvetica", 12), bg="#FF9800", fg="white",
-                           command=self.unequip_selected_gear)
-        unequip_btn.pack(side=tk.LEFT, padx=5)
+        equip_btn = tk.Button(button_row1, text="⚔️ Equip Selected", 
+                     font=("Helvetica", 11), bg="#4CAF50", fg="white",
+                     command=self.equip_multiple_gear)
+        equip_btn.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
 
-    # Close button
+        unequip_btn = tk.Button(button_row1, text="📤 Unequip Selected", 
+                       font=("Helvetica", 11), bg="#FF9800", fg="white",
+                       command=self.unequip_multiple_gear)
+        unequip_btn.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        # Second row of buttons
+        button_row2 = tk.Frame(button_frame, bg="#FFE6E6")
+        button_row2.pack(fill=tk.X, pady=2)
+
+        select_all_btn = tk.Button(button_row2, text="📋 Select All", 
+                          font=("Helvetica", 11), bg="#2196F3", fg="white",
+                          command=self.select_all_gear)
+        select_all_btn.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        clear_selection_btn = tk.Button(button_row2, text="🚫 Clear Selection", 
+                               font=("Helvetica", 11), bg="#757575", fg="white",
+                               command=self.clear_gear_selection)
+        clear_selection_btn.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        # Third row - Batch operations
+        button_row3 = tk.Frame(button_frame, bg="#FFE6E6")
+        button_row3.pack(fill=tk.X, pady=2)
+
+        equip_all_btn = tk.Button(button_row3, text="⚔️ Equip All Unequipped", 
+                         font=("Helvetica", 11), bg="#27AE60", fg="white",
+                         command=self.equip_all_unequipped_gear)
+        equip_all_btn.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        unequip_all_btn = tk.Button(button_row3, text="📤 Unequip All", 
+                           font=("Helvetica", 11), bg="#E74C3C", fg="white",
+                           command=self.unequip_all_gear)
+        unequip_all_btn.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        # Close button
         close_btn = tk.Button(self.gear_window, text="Close", 
-                         font=("Helvetica", 12), bg="#757575", fg="white",
-                         command=self.gear_window.destroy)
+                     font=("Helvetica", 12), bg="#757575", fg="white",
+                     command=self.gear_window.destroy)
         close_btn.pack(pady=10)
 
-    def refresh_gear_list(self):
-        """Refresh the gear inventory listbox"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
-        self.gear_listbox.delete(0, tk.END)
-    
-        if not self.player.gear_inventory:
-            self.gear_listbox.insert(tk.END, "No gear in inventory")
-            return
-    
-        for i, gear in enumerate(self.player.gear_inventory):
-            equipped_text = " [EQUIPPED]" if gear.equipped else ""
-            bonus_text = ""
-            if gear.stat_bonus:
-                bonus_list = [f"+{value} {stat}" for stat, value in gear.stat_bonus.items()]
-                bonus_text = f" ({', '.join(bonus_list)})"
-        
-            display_text = f"{gear.name} [{gear.gear_type}]{bonus_text}{equipped_text}"
-            self.gear_listbox.insert(tk.END, display_text)
+    def select_all_gear(self):
+        """Select all gear items in the listbox"""
+        if hasattr(self, 'gear_listbox'):
+            self.gear_listbox.select_set(0, tk.END)
 
-    def equip_selected_gear(self):
-        """Equip the selected gear"""
+    def clear_gear_selection(self):
+        """Clear all selections in the gear listbox"""
+        if hasattr(self, 'gear_listbox'):
+            self.gear_listbox.selection_clear(0, tk.END)
+
+    def equip_multiple_gear(self):
+        """Equip all selected gear items"""
         if not hasattr(self, 'player') or self.player is None:
             return
-        selection = self.gear_listbox.curselection()
-    
-        if not selection:
+        
+        selections = self.gear_listbox.curselection()
+        
+        if not selections:
             messagebox.showwarning("No Selection", "Please select gear to equip!")
             return
-    
-        gear_index = selection[0]
-        if gear_index >= len(self.player.gear_inventory):
-            return
-    
-        selected_gear = self.player.gear_inventory[gear_index]
-    
-        if selected_gear.equipped:
-            messagebox.showinfo("Already Equipped", f"{selected_gear.name} is already equipped!")
-            return
-    
-    # Equip the gear
-        self.player.equip_gear(selected_gear)
-    
-    # Refresh displays
+        
+        equipped_count = 0
+        already_equipped = 0
+        equipped_items = []
+        
+        for gear_index in selections:
+            if gear_index >= len(self.player.gear_inventory):
+                continue
+            
+            selected_gear = self.player.gear_inventory[gear_index]
+            
+            if selected_gear.equipped:
+                already_equipped += 1
+                continue
+            
+            # Equip the gear
+            self.player.equip_gear(selected_gear)
+            equipped_count += 1
+            equipped_items.append(selected_gear.name)
+        
+        # Show results
+        if equipped_count > 0:
+            items_text = ", ".join(equipped_items[:3])  # Show first 3 items
+            if len(equipped_items) > 3:
+                items_text += f" and {len(equipped_items) - 3} more"
+            
+            self.log_message(f"⚔️ Equipped {equipped_count} items: {items_text}")
+            
+            if already_equipped > 0:
+                messagebox.showinfo("Batch Equip Complete", 
+                                f"Equipped {equipped_count} items!\n{already_equipped} items were already equipped.")
+            else:
+                messagebox.showinfo("Batch Equip Complete", f"Successfully equipped {equipped_count} items!")
+        else:
+            if already_equipped > 0:
+                messagebox.showinfo("Nothing to Equip", "All selected items are already equipped!")
+            else:
+                messagebox.showwarning("No Valid Gear", "No valid gear selected to equip!")
+        
+        # Refresh displays
         self.refresh_gear_window()
         self.update_player_info()
-    
-    # Log the equipment change
-        bonus_text = ""
-        if selected_gear.stat_bonus:
-            bonus_list = [f"+{value} {stat}" for stat, value in selected_gear.stat_bonus.items()]
-            bonus_text = f" ({', '.join(bonus_list)})"
-        self.log_message(f"⚔️ Equipped {selected_gear.name}{bonus_text}!")
-    
-    def unequip_selected_gear(self):
-        """Unequip the selected gear"""
+
+    def unequip_multiple_gear(self):
+        """Unequip all selected gear items"""
         if not hasattr(self, 'player') or self.player is None:
             return
-        selection = self.gear_listbox.curselection()
-    
-        if not selection:
+        
+        selections = self.gear_listbox.curselection()
+        
+        if not selections:
             messagebox.showwarning("No Selection", "Please select gear to unequip!")
             return
-    
-        gear_index = selection[0]
-        if gear_index >= len(self.player.gear_inventory):
-            return
-    
-        selected_gear = self.player.gear_inventory[gear_index]
-    
-        if not selected_gear.equipped:
-            messagebox.showinfo("Not Equipped", f"{selected_gear.name} is not equipped!")
-            return
-    
-    # Unequip the gear
-        selected_gear.equipped = False
-    
-    # Remove from equipment slot
-        if selected_gear.gear_type == "rod":
-            self.player.equipped_rod = None
-        elif selected_gear.gear_type == "head":
-            self.player.equipped_head = None
-        elif selected_gear.gear_type == "torso":
-            self.player.equipped_torso = None
-        elif selected_gear.gear_type == "leg":
-            self.player.equipped_leg = None
-        elif selected_gear.gear_type == "foot":
-            self.player.equipped_foot = None
-        elif selected_gear.gear_type == "glove":
-            self.player.equipped_glove = None
-        elif selected_gear.gear_type == "necklace":
-            self.player.equipped_necklace = None
-        elif selected_gear.gear_type == "ring":
-            self.player.equipped_ring = None
-        elif selected_gear.gear_type == "knife":
-            self.player.equipped_knife = None
-    
-    # Refresh displays
+        
+        unequipped_count = 0
+        not_equipped = 0
+        unequipped_items = []
+        
+        for gear_index in selections:
+            if gear_index >= len(self.player.gear_inventory):
+                continue
+            
+            selected_gear = self.player.gear_inventory[gear_index]
+            
+            if not selected_gear.equipped:
+                not_equipped += 1
+                continue
+            
+            # Unequip the gear
+            selected_gear.equipped = False
+            
+            # Remove from equipment slot
+            if selected_gear.gear_type == "rod":
+                self.player.equipped_rod = None
+            elif selected_gear.gear_type == "head":
+                self.player.equipped_head = None
+            elif selected_gear.gear_type == "torso":
+                self.player.equipped_torso = None
+            elif selected_gear.gear_type == "leg":
+                self.player.equipped_leg = None
+            elif selected_gear.gear_type == "foot":
+                self.player.equipped_foot = None
+            elif selected_gear.gear_type == "glove":
+                self.player.equipped_glove = None
+            elif selected_gear.gear_type == "necklace":
+                self.player.equipped_necklace = None
+            elif selected_gear.gear_type == "ring":
+                self.player.equipped_ring = None
+            elif selected_gear.gear_type == "knife":
+                self.player.equipped_knife = None
+            
+            unequipped_count += 1
+            unequipped_items.append(selected_gear.name)
+        
+        # Show results
+        if unequipped_count > 0:
+            items_text = ", ".join(unequipped_items[:3])  # Show first 3 items
+            if len(unequipped_items) > 3:
+                items_text += f" and {len(unequipped_items) - 3} more"
+            
+            self.log_message(f"📤 Unequipped {unequipped_count} items: {items_text}")
+            
+            if not_equipped > 0:
+                messagebox.showinfo("Batch Unequip Complete", 
+                                f"Unequipped {unequipped_count} items!\n{not_equipped} items were not equipped.")
+            else:
+                messagebox.showinfo("Batch Unequip Complete", f"Successfully unequipped {unequipped_count} items!")
+        else:
+            if not_equipped > 0:
+                messagebox.showinfo("Nothing to Unequip", "None of the selected items are equipped!")
+            else:
+                messagebox.showwarning("No Valid Gear", "No valid gear selected to unequip!")
+        
+        # Refresh displays
         self.refresh_gear_window()
         self.update_player_info()
-    
-    # Log the equipment change
-        self.log_message(f"📤 Unequipped {selected_gear.name}")
-    
-    def refresh_gear_window(self):
-        """Refresh all elements in the gear window"""
+
+    def equip_all_unequipped_gear(self):
+        """Equip all unequipped gear in inventory"""
         if not hasattr(self, 'player') or self.player is None:
             return
+        
+        # Find all unequipped gear
+        unequipped_gear = [gear for gear in self.player.gear_inventory if not gear.equipped]
+        
+        if not unequipped_gear:
+            messagebox.showinfo("All Equipped", "All gear is already equipped!")
+            return
+        
+        # Confirm batch equip
+        confirm = messagebox.askyesno("Equip All Unequipped", 
+                                    f"Equip all {len(unequipped_gear)} unequipped gear items?\n\n"
+                                    "This will replace currently equipped items of the same type.")
+        if not confirm:
+            return
+        
+        equipped_count = 0
+        equipped_items = []
+        
+        for gear in unequipped_gear:
+            self.player.equip_gear(gear)
+            equipped_count += 1
+            equipped_items.append(gear.name)
+        
+        # Show results
+        items_text = ", ".join(equipped_items[:5])  # Show first 5 items
+        if len(equipped_items) > 5:
+            items_text += f" and {len(equipped_items) - 5} more"
+        
+        self.log_message(f"⚔️ MASS EQUIP: Equipped {equipped_count} items: {items_text}")
+        messagebox.showinfo("Mass Equip Complete", f"Successfully equipped all {equipped_count} unequipped items!")
+        
+        # Refresh displays
+        self.refresh_gear_window()
+        self.update_player_info()
 
-        if not hasattr(self, 'gear_window') or not self.gear_window.winfo_exists():
+    def unequip_all_gear(self):
+        """Unequip all equipped gear"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Find all equipped gear
+        equipped_gear = [gear for gear in self.player.gear_inventory if gear.equipped]
+        
+        if not equipped_gear:
+            messagebox.showinfo("Nothing Equipped", "No gear is currently equipped!")
+            return
+        
+        # Confirm batch unequip
+        confirm = messagebox.askyesno("Unequip All Gear", 
+                                    f"Unequip all {len(equipped_gear)} equipped gear items?")
+        if not confirm:
+            return
+        
+        unequipped_count = 0
+        unequipped_items = []
+        
+        for gear in equipped_gear:
+            gear.equipped = False
+            unequipped_count += 1
+            unequipped_items.append(gear.name)
+        
+        # Clear all equipment slots
+        self.player.equipped_rod = None
+        self.player.equipped_head = None
+        self.player.equipped_torso = None
+        self.player.equipped_leg = None
+        self.player.equipped_foot = None
+        self.player.equipped_glove = None
+        self.player.equipped_necklace = None
+        self.player.equipped_ring = None
+        self.player.equipped_knife = None
+        
+        # Show results
+        items_text = ", ".join(unequipped_items[:5])  # Show first 5 items
+        if len(unequipped_items) > 5:
+            items_text += f" and {len(unequipped_items) - 5} more"
+        
+        self.log_message(f"📤 MASS UNEQUIP: Unequipped {unequipped_count} items: {items_text}")
+        messagebox.showinfo("Mass Unequip Complete", f"Successfully unequipped all {unequipped_count} equipped items!")
+        
+        # Refresh displays
+        self.refresh_gear_window()
+        self.update_player_info()
+
+    def refresh_gear_list(self):
+            """Refresh the gear inventory listbox"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            self.gear_listbox.delete(0, tk.END)
+        
+            if not self.player.gear_inventory:
+                self.gear_listbox.insert(tk.END, "No gear in inventory")
+                return
+        
+            for i, gear in enumerate(self.player.gear_inventory):
+                equipped_text = " [EQUIPPED]" if gear.equipped else ""
+                bonus_text = ""
+                if gear.stat_bonus:
+                    bonus_list = [f"+{value} {stat}" for stat, value in gear.stat_bonus.items()]
+                    bonus_text = f" ({', '.join(bonus_list)})"
+            
+                display_text = f"{gear.name} [{gear.gear_type}]{bonus_text}{equipped_text}"
+                self.gear_listbox.insert(tk.END, display_text)
+
+    def equip_selected_gear(self):
+            """Equip the selected gear"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            selection = self.gear_listbox.curselection()
+        
+            if not selection:
+                messagebox.showwarning("No Selection", "Please select gear to equip!")
+                return
+        
+            gear_index = selection[0]
+            if gear_index >= len(self.player.gear_inventory):
+                return
+        
+            selected_gear = self.player.gear_inventory[gear_index]
+        
+            if selected_gear.equipped:
+                messagebox.showinfo("Already Equipped", f"{selected_gear.name} is already equipped!")
+                return
+        
+        # Equip the gear
+            self.player.equip_gear(selected_gear)
+        
+        # Refresh displays
+            self.refresh_gear_window()
+            self.update_player_info()
+        
+        # Log the equipment change
+            bonus_text = ""
+            if selected_gear.stat_bonus:
+                bonus_list = [f"+{value} {stat}" for stat, value in selected_gear.stat_bonus.items()]
+                bonus_text = f" ({', '.join(bonus_list)})"
+            self.log_message(f"⚔️ Equipped {selected_gear.name}{bonus_text}!")
+        
+    def unequip_selected_gear(self):
+            """Unequip the selected gear"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            selection = self.gear_listbox.curselection()
+        
+            if not selection:
+                messagebox.showwarning("No Selection", "Please select gear to unequip!")
+                return
+        
+            gear_index = selection[0]
+            if gear_index >= len(self.player.gear_inventory):
+                return
+        
+            selected_gear = self.player.gear_inventory[gear_index]
+        
+            if not selected_gear.equipped:
+                messagebox.showinfo("Not Equipped", f"{selected_gear.name} is not equipped!")
+                return
+        
+        # Unequip the gear
+            selected_gear.equipped = False
+        
+        # Remove from equipment slot
+            if selected_gear.gear_type == "rod":
+                self.player.equipped_rod = None
+            elif selected_gear.gear_type == "head":
+                self.player.equipped_head = None
+            elif selected_gear.gear_type == "torso":
+                self.player.equipped_torso = None
+            elif selected_gear.gear_type == "leg":
+                self.player.equipped_leg = None
+            elif selected_gear.gear_type == "foot":
+                self.player.equipped_foot = None
+            elif selected_gear.gear_type == "glove":
+                self.player.equipped_glove = None
+            elif selected_gear.gear_type == "necklace":
+                self.player.equipped_necklace = None
+            elif selected_gear.gear_type == "ring":
+                self.player.equipped_ring = None
+            elif selected_gear.gear_type == "knife":
+                self.player.equipped_knife = None
+        
+        # Refresh displays
+            self.refresh_gear_window()
+            self.update_player_info()
+        
+        # Log the equipment change
+            self.log_message(f"📤 Unequipped {selected_gear.name}")
+        
+    def refresh_gear_window(self):
+            """Refresh all elements in the gear window"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+
+            if not hasattr(self, 'gear_window') or not self.gear_window.winfo_exists():
+                return
+        
+            # Refresh gear list
+            self.refresh_gear_list()
+        
+            # Update equipment slots
+            equipment_slots = [
+                ("rod", self.player.equipped_rod),
+                ("head", self.player.equipped_head),
+                ("torso", self.player.equipped_torso),
+                ("leg", self.player.equipped_leg),
+                ("foot", self.player.equipped_foot),
+                ("glove", self.player.equipped_glove),
+                ("necklace", self.player.equipped_necklace),
+                ("ring", self.player.equipped_ring),
+                ("knife", self.player.equipped_knife)
+            ]
+            
+            for slot_type, equipped_item in equipment_slots:
+                if slot_type in self.slot_labels:
+                    if equipped_item:
+                        bonus_text = ""
+                        if equipped_item.stat_bonus:
+                            bonus_list = [f"+{value} {stat}" for stat, value in equipped_item.stat_bonus.items()]
+                            bonus_text = f" ({', '.join(bonus_list)})"
+                        item_text = f"{equipped_item.name}{bonus_text}"
+                        bg_color = "#90EE90"  # Light green for equipped
+                    else:
+                        item_text = "Empty"
+                        bg_color = "#FFE4E1"  # Light pink for empty
+                    
+                    self.slot_labels[slot_type].config(text=item_text, bg=bg_color)
+            
+            # Update stats display with fish bonuses
+            total_stats = self.player.get_total_stats()
+            fish_bonuses = self.player.get_fish_bonuses()
+            
+            # Show breakdown of bonuses
+            gear_luck = total_stats['luck'] - self.player.base_luck - fish_bonuses['luck']
+            gear_attack = total_stats['attack'] - self.player.base_attack - fish_bonuses['attack']
+            gear_defense = total_stats['defense'] - self.player.base_defense - fish_bonuses['defense']
+            gear_speed = total_stats['speed'] - self.player.base_speed - fish_bonuses['speed']
+            
+            stats_text = f"""🍀 Luck: {total_stats['luck']} (Base: {self.player.base_luck}"""
+            if gear_luck > 0:
+                stats_text += f" + {gear_luck} gear"
+            if fish_bonuses['luck'] > 0:
+                stats_text += f" + {fish_bonuses['luck']} fish"
+            stats_text += ")\n"
+            
+            stats_text += f"""⚔️ Attack: {total_stats['attack']} (Base: {self.player.base_attack}"""
+            if gear_attack > 0:
+                stats_text += f" + {gear_attack} gear"
+            if fish_bonuses['attack'] > 0:
+                stats_text += f" + {fish_bonuses['attack']} fish"
+            stats_text += ")\n"
+            
+            stats_text += f"""🛡️ Defense: {total_stats['defense']} (Base: {self.player.base_defense}"""
+            if gear_defense > 0:
+                stats_text += f" + {gear_defense} gear"
+            if fish_bonuses['defense'] > 0:
+                stats_text += f" + {fish_bonuses['defense']} fish"
+            stats_text += ")\n"
+            
+            stats_text += f"""💨 Speed: {total_stats['speed']} (Base: {self.player.base_speed}"""
+            if gear_speed > 0:
+                stats_text += f" + {gear_speed} gear"
+            if fish_bonuses['speed'] > 0:
+                stats_text += f" + {fish_bonuses['speed']} fish"
+            stats_text += ")\n"
+            
+            # Custom Text Here
+            stats_text += f"""
+    """
+            
+            
+            self.gear_stats_display.config(text=stats_text)
+
+    def open_items_window(self):
+        """Open items window to use consumable items"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Get consumable items
+        consumable_items = [item for item in self.player.inventory if hasattr(item, 'item_type') and item.item_type == "consumable"]
+        
+        if not consumable_items:
+            messagebox.showinfo("No Items", "You don't have any consumable items!")
+            return
+        
+        # Create new window
+        self.items_window = tk.Toplevel(self.root)
+        self.items_window.title("Use Items")
+        self.items_window.geometry("600x500")
+        self.items_window.configure(bg="#F5F5DC")
+        
+        # Window title
+        title_label = tk.Label(self.items_window, text="🧪 Use Consumable Items", 
+                              font=("Helvetica", 18, "bold"), bg="#F5F5DC")
+        title_label.pack(pady=10)
+        
+        # Current stats display
+        info_frame = tk.Frame(self.items_window, bg="#F5F5DC")
+        info_frame.pack(pady=5)
+        
+        stats = self.player.get_total_stats()
+        stats_text = f"❤️ Health: {self.player.health}/{self.player.max_health} | ⚡ Energy: {self.player.energy}/{self.player.max_energy} | 🍀 Luck: {stats['luck']} | ⚔️ Attack: {stats['attack']} | 🛡️ Defense: {stats['defense']} | 💨 Speed: {stats['speed']}"
+        
+        stats_label = tk.Label(info_frame, text=stats_text, 
+                             font=("Helvetica", 10), bg="#F5F5DC", fg="blue")
+        stats_label.pack(pady=5)
+        
+        # Items list
+        items_label = tk.Label(self.items_window, text="Select an item to use:", 
+                              font=("Helvetica", 12, "bold"), bg="#F5F5DC")
+        items_label.pack(pady=(10, 5))
+        
+        # Frame for listbox and scrollbar
+        listbox_frame = tk.Frame(self.items_window, bg="#F5F5DC")
+        listbox_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=5)
+        
+        # Listbox with scrollbar
+        scrollbar = tk.Scrollbar(listbox_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.items_listbox = tk.Listbox(listbox_frame, font=("Helvetica", 11), 
+                                       yscrollcommand=scrollbar.set)
+        self.items_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.items_listbox.yview)
+        
+        # Store items for reference
+        self.current_consumable_items = []
+        
+        # Add consumable items to list
+        for item in consumable_items:
+            display_text = f"🧪 {item.name} - {item.effect}"
+            self.items_listbox.insert(tk.END, display_text)
+            self.current_consumable_items.append(item)
+        
+        # Buttons frame
+        button_frame = tk.Frame(self.items_window, bg="#F5F5DC")
+        button_frame.pack(pady=20)
+        
+        # Use item button
+        use_button = tk.Button(button_frame, text="✨ Use Selected Item", 
+                              font=("Helvetica", 12), bg="#4CAF50", fg="white",
+                              command=self.use_selected_item)
+        use_button.pack(side=tk.LEFT, padx=5)
+        
+        # Close button
+        close_button = tk.Button(button_frame, text="Close", 
+                                font=("Helvetica", 12), bg="#757575", fg="white",
+                                command=self.items_window.destroy)
+        close_button.pack(side=tk.LEFT, padx=5)
+
+    def open_eat_fish_window(self):
+        """Open eat fish window to consume fish for energy"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Get fish from inventory
+        fish_items = [item for item in self.player.inventory if hasattr(item, 'actual_size')]
+        
+        if not fish_items:
+            messagebox.showinfo("No Fish", "You don't have any fish to eat!")
+            return
+        
+        # Create new window
+        self.eat_fish_window = tk.Toplevel(self.root)
+        self.eat_fish_window.title("Eat Fish for Energy")
+        self.eat_fish_window.geometry("700x600")
+        self.eat_fish_window.configure(bg="#FFF8DC")
+        
+        # Window title
+        title_label = tk.Label(self.eat_fish_window, text="🍽️ Eat Fish for Energy", 
+                            font=("Helvetica", 18, "bold"), bg="#FFF8DC")
+        title_label.pack(pady=10)
+        
+        # Current energy display
+        info_frame = tk.Frame(self.eat_fish_window, bg="#FFF8DC")
+        info_frame.pack(pady=5)
+        
+        energy_label = tk.Label(info_frame, text=f"Current Energy: {self.player.energy}/{self.player.max_energy}", 
+                            font=("Helvetica", 14), bg="#FFF8DC", fg="blue")
+        energy_label.pack()
+        
+        # Energy warning if at max
+        if self.player.energy >= self.player.max_energy:
+            warning_label = tk.Label(info_frame, text="⚠️ You're at max energy! Eating won't restore more.", 
+                                font=("Helvetica", 11), bg="#FFF8DC", fg="orange")
+            warning_label.pack(pady=2)
+        
+        # Instructions
+        instruction_label = tk.Label(self.eat_fish_window, text="Select fish to eat (multiple selection allowed):", 
+                                    font=("Helvetica", 12, "bold"), bg="#FFF8DC")
+        instruction_label.pack(pady=(10, 5))
+        
+        # Frame for listbox and scrollbar
+        listbox_frame = tk.Frame(self.eat_fish_window, bg="#FFF8DC")
+        listbox_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=5)
+        
+        # Listbox with scrollbar (allow multiple selections)
+        scrollbar = tk.Scrollbar(listbox_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.eat_fish_listbox = tk.Listbox(listbox_frame, font=("Helvetica", 11), 
+                                        yscrollcommand=scrollbar.set, selectmode=tk.MULTIPLE)
+        self.eat_fish_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.eat_fish_listbox.yview)
+        
+        # Store fish for reference
+        self.current_fish_items = []
+        
+        # Add fish to listbox with energy preview
+        for fish in fish_items:
+            # Calculate potential energy gain
+            potential_energy_gain = min(fish.food_value, self.player.max_energy - self.player.energy)
+            
+            # Show fish effects if any
+            effect_text = ""
+            if hasattr(fish, 'fish_effect') and fish.fish_effect != "none":
+                # Extract stat bonus from fish effect for display
+                import re
+                match = re.search(r'\+(\d+)\s+(defense|attack|luck|speed)', fish.fish_effect.lower())
+                if match:
+                    bonus_amount = match.group(1)
+                    stat_type = match.group(2)
+                    effect_text = f" [+{bonus_amount} {stat_type}]"
+            
+            display_text = f"🐟 {fish.name} ({fish.actual_size}in) → +{fish.food_value} energy (will gain: {potential_energy_gain}){effect_text}"
+            self.eat_fish_listbox.insert(tk.END, display_text)
+            self.current_fish_items.append(fish)
+        
+        # Energy preview frame
+        preview_frame = tk.Frame(self.eat_fish_window, bg="#E6F3FF", relief=tk.SUNKEN, bd=2)
+        preview_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        preview_title = tk.Label(preview_frame, text="📊 Energy Preview:", 
+                            font=("Helvetica", 12, "bold"), bg="#E6F3FF")
+        preview_title.pack(pady=2)
+        
+        self.energy_preview_label = tk.Label(preview_frame, text="Select fish to see energy preview", 
+                                            font=("Helvetica", 11), bg="#E6F3FF", fg="gray")
+        self.energy_preview_label.pack(pady=2)
+        
+        # Bind selection change to update preview
+        self.eat_fish_listbox.bind('<<ListboxSelect>>', self.update_energy_preview)
+        
+        # Buttons frame
+        button_frame = tk.Frame(self.eat_fish_window, bg="#FFF8DC")
+        button_frame.pack(pady=20)
+        
+        # Eat selected button
+        eat_selected_button = tk.Button(button_frame, text="🍽️ Eat Selected Fish", 
+                                    font=("Helvetica", 12), bg="#4CAF50", fg="white",
+                                    command=self.eat_selected_fish_from_window)
+        eat_selected_button.pack(side=tk.LEFT, padx=5)
+        
+        # Select all button
+        select_all_button = tk.Button(button_frame, text="📋 Select All Fish", 
+                                    font=("Helvetica", 12), bg="#2196F3", fg="white",
+                                    command=self.select_all_fish)
+        select_all_button.pack(side=tk.LEFT, padx=5)
+        
+        # Eat all button (for quick energy restoration)
+        eat_all_button = tk.Button(button_frame, text="🔥 Eat All Fish", 
+                                font=("Helvetica", 12), bg="#FF5722", fg="white",
+                                command=self.eat_all_fish)
+        eat_all_button.pack(side=tk.LEFT, padx=5)
+        
+        # Close button
+        close_button = tk.Button(button_frame, text="Close", 
+                                font=("Helvetica", 12), bg="#757575", fg="white",
+                                command=self.eat_fish_window.destroy)
+        close_button.pack(side=tk.LEFT, padx=5)
+
+    def update_energy_preview(self, event=None):
+        """Update the energy preview based on selected fish"""
+        if not hasattr(self, 'player') or not hasattr(self, 'eat_fish_listbox'):
+            return
+        
+        selections = self.eat_fish_listbox.curselection()
+        
+        if not selections:
+            self.energy_preview_label.config(text="Select fish to see energy preview", fg="gray")
+            return
+        
+        total_energy_value = 0
+        fish_count = len(selections)
+        
+        for index in selections:
+            if index < len(self.current_fish_items):
+                fish = self.current_fish_items[index]
+                total_energy_value += fish.food_value
+        
+        # Calculate actual energy that would be gained
+        current_energy = self.player.energy
+        max_energy = self.player.max_energy
+        actual_energy_gain = min(total_energy_value, max_energy - current_energy)
+        energy_after = current_energy + actual_energy_gain
+        
+        # Create preview text
+        if fish_count == 1:
+            preview_text = f"Eating 1 fish: {current_energy} → {energy_after} energy (+{actual_energy_gain})"
+        else:
+            preview_text = f"Eating {fish_count} fish: {current_energy} → {energy_after} energy (+{actual_energy_gain})"
+        
+        # Add warning if some energy would be wasted
+        if total_energy_value > actual_energy_gain:
+            wasted_energy = total_energy_value - actual_energy_gain
+            preview_text += f" [⚠️ {wasted_energy} energy wasted]"
+            self.energy_preview_label.config(text=preview_text, fg="orange")
+        else:
+            self.energy_preview_label.config(text=preview_text, fg="green")
+
+    def select_all_fish(self):
+        """Select all fish in the eat fish listbox"""
+        if hasattr(self, 'eat_fish_listbox'):
+            self.eat_fish_listbox.select_set(0, tk.END)
+            self.update_energy_preview()
+
+    def eat_selected_fish_from_window(self):
+        """Eat selected fish from the eat fish window"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        selections = self.eat_fish_listbox.curselection()
+        
+        if not selections:
+            messagebox.showwarning("No Selection", "Please select fish to eat!")
+            return
+        
+        # Calculate total energy and effects
+        total_energy_gained = 0
+        fish_to_eat = []
+        lost_effects = []
+        
+        for index in selections:
+            if index < len(self.current_fish_items):
+                fish = self.current_fish_items[index]
+                fish_to_eat.append(fish)
+                
+                # Check for lost stat effects
+                if hasattr(fish, 'fish_effect') and fish.fish_effect != "none":
+                    import re
+                    match = re.search(r'\+(\d+)\s+(defense|attack|luck|speed)', fish.fish_effect.lower())
+                    if match:
+                        bonus_amount = match.group(1)
+                        stat_type = match.group(2)
+                        lost_effects.append(f"+{bonus_amount} {stat_type}")
+        
+        if not fish_to_eat:
+            return
+        
+        # Calculate actual energy gain
+        total_food_value = sum(fish.food_value for fish in fish_to_eat)
+        actual_energy_gain = min(total_food_value, self.player.max_energy - self.player.energy)
+        
+        # Confirm eating with details
+        fish_names = [fish.name for fish in fish_to_eat]
+        fish_text = ", ".join(fish_names[:3])
+        if len(fish_names) > 3:
+            fish_text += f" and {len(fish_names) - 3} more"
+        
+        confirm_text = f"Eat {len(fish_to_eat)} fish: {fish_text}?\n\nWill gain {actual_energy_gain} energy"
+        
+        if lost_effects:
+            effects_text = ", ".join(lost_effects[:3])
+            if len(lost_effects) > 3:
+                effects_text += f" and {len(lost_effects) - 3} more"
+            confirm_text += f"\n⚠️ You will lose stat bonuses: {effects_text}"
+        
+        if total_food_value > actual_energy_gain:
+            wasted = total_food_value - actual_energy_gain
+            confirm_text += f"\n⚠️ {wasted} energy will be wasted (already at/near max)"
+        
+        confirm = messagebox.askyesno("Confirm Eating", confirm_text)
+        if not confirm:
+            return
+        
+        # Eat all selected fish
+        eaten_fish = []
+        for fish in fish_to_eat:
+            if fish in self.player.inventory:
+                old_energy = self.player.energy
+                self.player.energy = min(self.player.max_energy, self.player.energy + fish.food_value)
+                energy_gained = self.player.energy - old_energy
+                
+                self.player.inventory.remove(fish)
+                eaten_fish.append((fish.name, energy_gained))
+        
+        # Log the results
+        if len(eaten_fish) == 1:
+            fish_name, energy = eaten_fish[0]
+            self.log_message(f"🍽️ Ate {fish_name}! Gained {energy} energy")
+        else:
+            total_gained = sum(energy for _, energy in eaten_fish)
+            self.log_message(f"🍽️ Ate {len(eaten_fish)} fish! Gained {total_gained} total energy")
+            
+            # Show individual fish if not too many
+            if len(eaten_fish) <= 5:
+                for fish_name, energy in eaten_fish:
+                    self.log_message(f"   • {fish_name} (+{energy} energy)")
+        
+        # Update displays
+        self.update_player_info()
+        
+        # Close and reopen window to refresh the list
+        self.eat_fish_window.destroy()
+        
+        # Show success message
+        messagebox.showinfo("Fish Eaten", f"Successfully ate {len(eaten_fish)} fish!\nGained {actual_energy_gain} energy total.")
+        
+        # Reopen window if there are still fish to eat
+        remaining_fish = [item for item in self.player.inventory if hasattr(item, 'actual_size')]
+        if remaining_fish:
+            self.open_eat_fish_window()
+
+    def eat_all_fish(self):
+        """Eat all fish in inventory"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        if not self.current_fish_items:
+            messagebox.showinfo("No Fish", "No fish available to eat!")
+            return
+        
+        # Calculate totals
+        total_food_value = sum(fish.food_value for fish in self.current_fish_items)
+        actual_energy_gain = min(total_food_value, self.player.max_energy - self.player.energy)
+        
+        # Count fish with effects
+        fish_with_effects = []
+        for fish in self.current_fish_items:
+            if hasattr(fish, 'fish_effect') and fish.fish_effect != "none":
+                fish_with_effects.append(fish.name)
+        
+        # Confirm eating all
+        confirm_text = f"Eat ALL {len(self.current_fish_items)} fish?\n\nWill gain {actual_energy_gain} energy"
+        
+        if fish_with_effects:
+            effects_count = len(fish_with_effects)
+            confirm_text += f"\n⚠️ You will lose stat bonuses from {effects_count} fish"
+        
+        if total_food_value > actual_energy_gain:
+            wasted = total_food_value - actual_energy_gain
+            confirm_text += f"\n⚠️ {wasted} energy will be wasted"
+        
+        confirm = messagebox.askyesno("Confirm Eat All", confirm_text)
+        if not confirm:
+            return
+        
+        # Eat all fish
+        eaten_count = 0
+        total_energy_gained = 0
+        
+        # Make a copy of the list to avoid modification during iteration
+        fish_to_eat = self.current_fish_items.copy()
+        
+        for fish in fish_to_eat:
+            if fish in self.player.inventory:
+                old_energy = self.player.energy
+                self.player.energy = min(self.player.max_energy, self.player.energy + fish.food_value)
+                energy_gained = self.player.energy - old_energy
+                
+                self.player.inventory.remove(fish)
+                eaten_count += 1
+                total_energy_gained += energy_gained
+        
+        # Log the results
+        self.log_message(f"🔥 ATE ALL FISH! Consumed {eaten_count} fish for {total_energy_gained} energy!")
+        
+        # Update displays
+        self.update_player_info()
+        
+        # Close window
+        self.eat_fish_window.destroy()
+        
+        # Show success message
+        messagebox.showinfo("All Fish Eaten", f"Ate all {eaten_count} fish!\nGained {total_energy_gained} energy total.")
+
+    def use_selected_item(self):
+        """Use the selected item from the items window"""
+        if not hasattr(self, 'player') or self.player is None:
             return
     
-        # Refresh gear list
-        self.refresh_gear_list()
-    
-        # Update equipment slots
-        equipment_slots = [
-            ("rod", self.player.equipped_rod),
-            ("head", self.player.equipped_head),
-            ("torso", self.player.equipped_torso),
-            ("leg", self.player.equipped_leg),
-            ("foot", self.player.equipped_foot),
-            ("glove", self.player.equipped_glove),
-            ("necklace", self.player.equipped_necklace),
-            ("ring", self.player.equipped_ring),
-            ("knife", self.player.equipped_knife)
-        ]
+        selection = self.items_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an item to use!")
+            return
         
-        for slot_type, equipped_item in equipment_slots:
-            if slot_type in self.slot_labels:
-                if equipped_item:
-                    bonus_text = ""
-                    if equipped_item.stat_bonus:
-                        bonus_list = [f"+{value} {stat}" for stat, value in equipped_item.stat_bonus.items()]
-                        bonus_text = f" ({', '.join(bonus_list)})"
-                    item_text = f"{equipped_item.name}{bonus_text}"
-                    bg_color = "#90EE90"  # Light green for equipped
-                else:
-                    item_text = "Empty"
-                    bg_color = "#FFE4E1"  # Light pink for empty
+        # Get the selected item
+        selected_index = selection[0]
+        if selected_index >= len(self.current_consumable_items):
+            messagebox.showwarning("Invalid Selection", "Selected item not found!")
+            return
+        
+        selected_item = self.current_consumable_items[selected_index]
+        
+        # Confirm item use
+        confirm = messagebox.askyesno("Confirm Use", 
+                                    f"Use {selected_item.name}?\n\nEffect: {selected_item.effect}")
+        if not confirm:
+            return
+        
+        # Use the item using your existing method
+        result = self.use_consumable_item(selected_item)
+        
+        # Log the result
+        self.log_message(f"🧪 Used {selected_item.name}! {result}")
+        
+        # Update displays
+        self.update_player_info()
+        
+        # Close and reopen items window to refresh the list
+        self.items_window.destroy()
+        
+        # Show success message
+        messagebox.showinfo("Item Used", f"Used {selected_item.name}!\n\n{result}")
+        
+        # Reopen items window if there are still consumable items
+        remaining_consumables = [item for item in self.player.inventory if hasattr(item, 'item_type') and item.item_type == "consumable"]
+        if remaining_consumables:
+            self.open_items_window()
+
+    def use_consumable_item(self, item):
+        """Use a consumable item with proper handling"""
+        if not hasattr(self, 'player') or self.player is None:
+            return "No player found!"
+        
+        if item.item_type == "consumable":
+            import re
+            
+            # Handle stat increase items - now more flexible for any stat and amount
+            if "increase" in item.effect and "by" in item.effect:
+                # Try to match "increase any skill/stat by X"
+                any_stat_match = re.search(r'increase any (?:skill|stat) by (\d+)', item.effect)
+                if any_stat_match:
+                    increase_amount = int(any_stat_match.group(1))
+                    return self.choose_stat_increase(item, increase_amount)
                 
-                self.slot_labels[slot_type].config(text=item_text, bg=bg_color)
+                # Try to match specific stats like "increase speed by 3"
+                specific_stat_match = re.search(r'increase (luck|attack|defense|speed) by (\d+)', item.effect, re.IGNORECASE)
+                if specific_stat_match:
+                    stat_name = specific_stat_match.group(1).lower()
+                    increase_amount = int(specific_stat_match.group(2))
+                    
+                    # Map stat names to player attributes
+                    stat_mapping = {
+                        'luck': ('base_luck', 'Luck'),
+                        'attack': ('base_attack', 'Attack'),
+                        'defense': ('base_defense', 'Defense'),
+                        'speed': ('base_speed', 'Speed')
+                    }
+                    
+                    if stat_name in stat_mapping:
+                        stat_attr, display_name = stat_mapping[stat_name]
+                        setattr(self.player, stat_attr, getattr(self.player, stat_attr) + increase_amount)
+                        self.player.inventory.remove(item)
+                        return f"{display_name} increased by {increase_amount}!"
+                
+                # Fallback for old format "increase any skill by 3" without number
+                if "increase any skill" in item.effect:
+                    return self.choose_stat_increase(item, 3)  # Default to 3 for legacy items
+            
+            elif "restore" in item.effect and "health" in item.effect:
+                # Health restoration items
+                health_match = re.search(r'restore (\d+) health', item.effect)
+                if health_match:
+                    heal_amount = int(health_match.group(1))
+                    old_health = self.player.health
+                    self.player.health = min(self.player.max_health, self.player.health + heal_amount)
+                    actual_healing = self.player.health - old_health
+                    self.player.inventory.remove(item)
+                    return f"Restored {actual_healing} health!"
+            
+                import re
+                catch_match = re.search(r'for the next (\d+) catches?', item.effect)
+                if catch_match:
+                    boost_amount = int(catch_match.group(1))
+                else:
+                    boost_amount = 1
+                
+                if not hasattr(self.player, 'bait_boost_remaining'):
+                    self.player.bait_boost_remaining = 0
+                self.player.bait_boost_remaining += boost_amount
+                self.player.inventory.remove(item)
+                return f"Increased catch rate for the next {boost_amount} fishing attempts!"
+            
+            elif "restore" in item.effect and "energy" in item.effect:
+                # Energy restoration items
+                energy_match = re.search(r'restore (\d+) energy', item.effect)
+                if energy_match:
+                    energy_amount = int(energy_match.group(1))
+                    old_energy = self.player.energy
+                    self.player.energy = min(self.player.max_energy, self.player.energy + energy_amount)
+                    actual_energy = self.player.energy - old_energy
+                    self.player.inventory.remove(item)
+                    return f"Restored {actual_energy} energy!"
         
-        # Update stats display with fish bonuses
-        total_stats = self.player.get_total_stats()
-        fish_bonuses = self.player.get_fish_bonuses()
+        return "Item cannot be used."
+
+    def choose_stat_increase(self, item, increase_amount=3, title="Choose Stat to Increase"):
+        """Let player choose which stat to increase - now reusable for any item"""
+        # Create a simple dialog for stat selection
+        choice_window = tk.Toplevel(self.root)
+        choice_window.title("Choose Stat to Increase")
+        choice_window.geometry("450x350")
+        choice_window.configure(bg="#F5F5DC")
+        choice_window.transient(self.root)
+        choice_window.grab_set()
         
-        # Show breakdown of bonuses
-        gear_luck = total_stats['luck'] - self.player.base_luck - fish_bonuses['luck']
-        gear_attack = total_stats['attack'] - self.player.base_attack - fish_bonuses['attack']
-        gear_defense = total_stats['defense'] - self.player.base_defense - fish_bonuses['defense']
-        gear_speed = total_stats['speed'] - self.player.base_speed - fish_bonuses['speed']
+        # Dynamic title based on item
+        item_emoji = "📜" if "scroll" in item.name.lower() else "✨"
+        title_label = tk.Label(choice_window, text=f"{item_emoji} {item.name}", 
+                              font=("Helvetica", 16, "bold"), bg="#F5F5DC")
+        title_label.pack(pady=10)
         
-        stats_text = f"""🍀 Luck: {total_stats['luck']} (Base: {self.player.base_luck}"""
-        if gear_luck > 0:
-            stats_text += f" + {gear_luck} gear"
-        if fish_bonuses['luck'] > 0:
-            stats_text += f" + {fish_bonuses['luck']} fish"
-        stats_text += ")\n"
+        instruction_label = tk.Label(choice_window, text=f"Choose which stat to increase by {increase_amount}:", 
+                                    font=("Helvetica", 12), bg="#F5F5DC")
+        instruction_label.pack(pady=5)
         
-        stats_text += f"""⚔️ Attack: {total_stats['attack']} (Base: {self.player.base_attack}"""
-        if gear_attack > 0:
-            stats_text += f" + {gear_attack} gear"
-        if fish_bonuses['attack'] > 0:
-            stats_text += f" + {fish_bonuses['attack']} fish"
-        stats_text += ")\n"
+        # Item description
+        if hasattr(item, 'description') and item.description:
+            desc_label = tk.Label(choice_window, text=f'"{item.description}"', 
+                                 font=("Helvetica", 10, "italic"), bg="#F5F5DC", 
+                                 fg="gray", wraplength=400)
+            desc_label.pack(pady=5)
         
-        stats_text += f"""🛡️ Defense: {total_stats['defense']} (Base: {self.player.base_defense}"""
-        if gear_defense > 0:
-            stats_text += f" + {gear_defense} gear"
-        if fish_bonuses['defense'] > 0:
-            stats_text += f" + {fish_bonuses['defense']} fish"
-        stats_text += ")\n"
+        # Current stats display with preview
+        stats = self.player.get_total_stats()
+        stats_text = f"🍀 Luck: {stats['luck']} → {stats['luck'] + increase_amount}\n⚔️ Attack: {stats['attack']} → {stats['attack'] + increase_amount}\n🛡️ Defense: {stats['defense']} → {stats['defense'] + increase_amount}\n💨 Speed: {stats['speed']} → {stats['speed'] + increase_amount}"
         
-        stats_text += f"""💨 Speed: {total_stats['speed']} (Base: {self.player.base_speed}"""
-        if gear_speed > 0:
-            stats_text += f" + {gear_speed} gear"
-        if fish_bonuses['speed'] > 0:
-            stats_text += f" + {fish_bonuses['speed']} fish"
-        stats_text += ")\n"
+        current_stats_label = tk.Label(choice_window, text=stats_text, 
+                                      font=("Helvetica", 10), bg="#F5F5DC", 
+                                      justify=tk.LEFT)
+        current_stats_label.pack(pady=10)
         
-        # Custom Text Here
-        stats_text += f"""
-"""
+        # Buttons for each stat
+        button_frame = tk.Frame(choice_window, bg="#F5F5DC")
+        button_frame.pack(pady=20)
         
+        result_text = [""]  # Use list to modify from inner functions
         
-        self.gear_stats_display.config(text=stats_text)
+        def increase_stat(stat_name, stat_attr):
+            setattr(self.player, stat_attr, getattr(self.player, stat_attr) + increase_amount)
+            self.player.inventory.remove(item)
+            result_text[0] = f"{stat_name} increased by {increase_amount}!"
+            choice_window.destroy()
+        
+        # Color-coded stat buttons - now uses dynamic increase_amount
+        luck_btn = tk.Button(button_frame, text=f"🍀 Increase Luck (+{increase_amount})", 
+                            font=("Helvetica", 12), bg="#FFD700", fg="black",
+                            command=lambda: increase_stat("Luck", "base_luck"))
+        luck_btn.pack(pady=3, fill=tk.X)
+        
+        attack_btn = tk.Button(button_frame, text=f"⚔️ Increase Attack (+{increase_amount})", 
+                              font=("Helvetica", 12), bg="#FF4444", fg="white",
+                              command=lambda: increase_stat("Attack", "base_attack"))
+        attack_btn.pack(pady=3, fill=tk.X)
+        
+        defense_btn = tk.Button(button_frame, text=f"🛡️ Increase Defense (+{increase_amount})", 
+                               font=("Helvetica", 12), bg="#4444FF", fg="white",
+                               command=lambda: increase_stat("Defense", "base_defense"))
+        defense_btn.pack(pady=3, fill=tk.X)
+        
+        speed_btn = tk.Button(button_frame, text=f"💨 Increase Speed (+{increase_amount})", 
+                             font=("Helvetica", 12), bg="#44FF44", fg="black",
+                             command=lambda: increase_stat("Speed", "base_speed"))
+        speed_btn.pack(pady=3, fill=tk.X)
+        
+        # Cancel button
+        cancel_btn = tk.Button(button_frame, text="❌ Cancel", 
+                              font=("Helvetica", 12), bg="#757575", fg="white",
+                              command=choice_window.destroy)
+        cancel_btn.pack(pady=(10, 0), fill=tk.X)
+        
+        # Wait for window to close
+        self.root.wait_window(choice_window)
+        
+        return result_text[0] if result_text[0] else f"{item.name} use cancelled."
 
     def update_player_info(self):
-        """Update the player information display"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
-        
-        if hasattr(self, 'info_frame'):
-            for widget in self.info_frame.winfo_children():
-                widget.destroy()
-        
-            info_container = tk.Frame(self.info_frame, bg="#ADD8E6")
-        info_container.pack(pady=5)
-        
-        # Make player name clickable
-        name_label = tk.Label(info_container, text=f"👤 {self.player.name}", 
-                             font=("Helvetica", 12, "bold"), bg="#ADD8E6", 
-                             fg="blue", cursor="hand2")
-        name_label.bind("<Button-1>", lambda e: self.open_inventory_window())
-        name_label.pack(side=tk.LEFT, padx=(0, 10))
-        
-        # Rest of the stats
-        stats_text = f"❤️ {self.player.health}/{self.player.max_health} | 💰 {self.player.gold}g | ⚡ {self.player.energy}/{self.player.max_energy}"
-        stats_label = tk.Label(info_container, text=stats_text, 
-                             font=("Helvetica", 12), bg="#ADD8E6")
-        stats_label.pack(side=tk.LEFT)
+            """Update the player information display"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            
+            if hasattr(self, 'info_frame'):
+                for widget in self.info_frame.winfo_children():
+                    widget.destroy()
+            
+                info_container = tk.Frame(self.info_frame, bg="#ADD8E6")
+            info_container.pack(pady=5)
+            
+            # Make player name clickable
+            name_label = tk.Label(info_container, text=f"👤 {self.player.name}", 
+                                font=("Helvetica", 12, "bold"), bg="#ADD8E6", 
+                                fg="blue", cursor="hand2")
+            name_label.bind("<Button-1>", lambda e: self.open_inventory_window())
+            name_label.pack(side=tk.LEFT, padx=(0, 10))
+            
+            # Rest of the stats
+            stats_text = f"❤️ {self.player.health}/{self.player.max_health} | 💰 {self.player.gold}g | ⚡ {self.player.energy}/{self.player.max_energy}"
+            stats_label = tk.Label(info_container, text=stats_text, 
+                                font=("Helvetica", 12), bg="#ADD8E6")
+            stats_label.pack(side=tk.LEFT)
 
     def begin_adventure(self):
         """Start the main game after character creation"""
@@ -2014,14 +3097,13 @@ class FishingGame:
             messagebox.showwarning("Missing Name", "Please enter your character's name!")
             return
 
-        # Create player with entered information
+            # Create player with entered information
         self.player = Player()
         self.player.name = name
 
 
-       # Give player starting gear
+        # Give player starting gear
         starting_gear_names = ["Old Rod", "Rusty Knife", "Old Shirt"]
-        
         for gear_name in starting_gear_names:
             for gear_data in self.gear_data['gear']:
                 if gear_data['name'] == gear_name:
@@ -2030,332 +3112,387 @@ class FishingGame:
                     self.player.gear_inventory.append(starting_gear)
                     break
 
+        
+        # Give player starting bait - pulled from JSON
+        bait_found = False
+        for item_data in self.item_data['items']:
+            if item_data.get('name') == 'Bait':
+                starting_bait = Item(item_data)
+                self.player.add_item(starting_bait)
+                bait_found = True
+                self.log_message(f"🎣 Starting with {starting_bait.name}")
+                break
+        
+        if not bait_found:
+            print("❌ Warning: Bait not found in items.json!")
+            self.log_message("⚠️ No starting bait available - you'll need to find or buy some!")
+
         self.setup_frame.pack_forget()
         self.create_main_game_interface()
 
     def catch_fish(self, location):
-        """Catch a fish at this location"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
+            """Catch a fish at this location"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
 
-        # Find fish that can be caught at this location
-        available_fish = []
-        for fish_data in self.fish_data['fish']:
-            if fish_data['type'] in location.fish_types:
-                available_fish.append(fish_data)
-    
-        if not available_fish:
-            return "No fish found at this location!"
-    
-        # Select random fish
-        selected_fish_data = random.choice(available_fish)
-        caught_fish = Fish(selected_fish_data)
-    
-        # Add to player's inventory
-        self.player.add_fish(caught_fish)
+            # Find fish that can be caught at this location
+            available_fish = []
+            for fish_data in self.fish_data['fish']:
+                if fish_data['type'] in location.fish_types:
+                    available_fish.append(fish_data)
+        
+            if not available_fish:
+                return "No fish found at this location!"
 
-        # Check for fish effects from JSON data
-        effect_message = ""
-        if hasattr(caught_fish, 'fish_effect') and caught_fish.fish_effect != "none":
-            effect_message = f" ✨ {caught_fish.fish_effect}!"
+            # Get player luck for rarity bonus
+            player_luck = self.player.get_total_stats()['luck'] if hasattr(self, 'player') and self.player else 0
 
-        return f"🐟 Caught a {caught_fish.name} ({caught_fish.actual_size} inches)! Food value: {caught_fish.food_value} energy{effect_message}"
+            # Weighted random selection by rarity with luck bonus
+            weights = []
+            for fish in available_fish:
+                rarity = fish.get('rarity', 1)
+                # Luck slightly increases weight for rarer fish (but not too much)
+                luck_bonus = player_luck * (rarity / 2000)  # Small bonus for rare fish
+                weight = max(1, 1000 - rarity + luck_bonus)
+                weights.append(weight)
+        
+            selected_fish_data = random.choices(available_fish, weights=weights)[0]
+            caught_fish = Fish(selected_fish_data)
+        
+            # Add to player's inventory
+            self.player.add_fish(caught_fish)
+
+            # Check for fish effects from JSON data
+            effect_message = ""
+            if hasattr(caught_fish, 'fish_effect') and caught_fish.fish_effect != "none":
+                effect_message = f" ✨ {caught_fish.fish_effect}!"
+
+            return f"🐟 Caught a {caught_fish.name} ({caught_fish.actual_size} inches)! Food value: {caught_fish.food_value} energy{effect_message}"
 
     def catch_item(self, location):
-        """Find an item while fishing"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
-        found_item_data = random.choice(self.item_data['items'])
-        found_item = Item(found_item_data)
-        self.player.add_item(found_item)
-        return f"📦 Found a {found_item.name}! {found_item.description}"
+            """Find an item while fishing"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            # Get player luck for rarity bonus
+            player_luck = self.player.get_total_stats()['luck'] if hasattr(self, 'player') and self.player else 0
+        
+            # Weighted random selection by rarity with luck bonus
+            weights = []
+            for item in self.item_data['items']:
+                rarity = item.get('rarity', 1)
+                # Luck slightly increases weight for rarer items
+                luck_bonus = player_luck * (rarity / 2000)  # Small bonus for rare items
+                weight = max(1, 1000 - rarity + luck_bonus)
+                weights.append(weight)
+        
+            found_item_data = random.choices(self.item_data['items'], weights=weights)[0]
+            found_item = Item(found_item_data)
+            self.player.add_item(found_item)
+            return f"📦 Found a {found_item.name}! {found_item.description}"
 
     def catch_gear(self, location):
-        """Find gear while fishing with rarity-based selection and quantity limits"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
-    
-        # Initialize world gear quantities if not exists
-        if not hasattr(self, 'world_gear_quantities'):
-            self.world_gear_quantities = {}
-            for gear_data in self.gear_data['gear']:
-                gear_name = gear_data.get('name', '')
-                if gear_name:  # Only add gear with valid names
-                    initial_quantity = gear_data.get('quantity', 1)  # Default 1 if not specified
-                    self.world_gear_quantities[gear_name] = initial_quantity
-    
-        # Filter available gear (positive rarity, quantity > 0)
-        catchable_gear = []
-        weights = []
-    
-        for gear_data in self.gear_data['gear']:
-            rarity = gear_data.get('rarity', 0)
-            gear_name = gear_data.get('name', '')
+            """Find gear while fishing with rarity-based selection and quantity limits"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
         
-            # Check if gear is available (non-starting gear and quantity > 0)
-            if (rarity >= 0 and 
-                gear_name and 
-                self.world_gear_quantities.get(gear_name, 0) > 0):
+            # Initialize world gear quantities if not exists
+            if not hasattr(self, 'world_gear_quantities'):
+                self.world_gear_quantities = {}
+                for gear_data in self.gear_data['gear']:
+                    gear_name = gear_data.get('name', '')
+                    if gear_name:  # Only add gear with valid names
+                        initial_quantity = gear_data.get('quantity', 1)  # Default 1 if not specified
+                        self.world_gear_quantities[gear_name] = initial_quantity
+        
+            # Get player luck for rarity bonus
+            player_luck = self.player.get_total_stats()['luck'] if hasattr(self, 'player') and self.player else 0
+
+            # Filter available gear (positive rarity, quantity > 0)
+            catchable_gear = []
+            weights = []
+
+            for gear_data in self.gear_data['gear']:
+                rarity = gear_data.get('rarity', 0)
+                gear_name = gear_data.get('name', '')
+        
+                # Check if gear is available (non-starting gear and quantity > 0)
+                if (rarity >= 0 and 
+                    gear_name and 
+                    self.world_gear_quantities.get(gear_name, 0) > 0):
             
-                catchable_gear.append(gear_data)
-                # Higher rarity = lower weight (rarer)
-                weight = max(1, 100 - rarity)
-                weights.append(weight)
-    
-        if not catchable_gear:
-            return "🎣 No gear available in the world!"
-    
-        # Use weighted random selection
-        found_gear_data = random.choices(catchable_gear, weights=weights)[0]
-        found_gear = Gear(found_gear_data)
-        self.player.add_gear(found_gear)
-    
-        # Decrease world quantity
-        gear_name = found_gear.name
-        self.world_gear_quantities[gear_name] -= 1
-        quantity_left = self.world_gear_quantities[gear_name]
-    
-        # Rarity and quantity messages
-        rarity_text = ""
-        if found_gear.rarity >= 80:
-            rarity_text = ""
-        elif found_gear.rarity >= 50:
-            rarity_text = ""
-        elif found_gear.rarity >= 20:
-            rarity_text = ""
+                    catchable_gear.append(gear_data)
+                    # Higher rarity = lower weight, but luck gives small bonus to rare gear
+                    luck_bonus = player_luck * (rarity / 2000)  # Small bonus for rare gear
+                    weight = max(1, 100 - rarity + luck_bonus)
+                    weights.append(weight)
 
-        # Placeholder for quantity text
-        quantity_text = ""
-        if quantity_left <= 0:
+            if not catchable_gear:
+                return "🎣 No gear available in the world!"
+
+            # Use weighted random selection
+            found_gear_data = random.choices(catchable_gear, weights=weights)[0]
+            found_gear = Gear(found_gear_data)
+            self.player.add_gear(found_gear)
+        
+            # Decrease world quantity
+            gear_name = found_gear.name
+            self.world_gear_quantities[gear_name] -= 1
+            quantity_left = self.world_gear_quantities[gear_name]
+        
+            # Rarity and quantity messages
+            rarity_text = ""
+            if found_gear.rarity >= 80:
+                rarity_text = ""
+            elif found_gear.rarity >= 50:
+                rarity_text = ""
+            elif found_gear.rarity >= 20:
+                rarity_text = ""
+
+            # Placeholder for quantity text
             quantity_text = ""
-        elif quantity_left <= 3:
-            quantity_text = f""
+            if quantity_left <= 0:
+                quantity_text = ""
+            elif quantity_left <= 3:
+                quantity_text = f""
 
-        return f"⚔️ Found {found_gear.name}!{rarity_text} {found_gear.description}{quantity_text}"
+            return f"⚔️ Found {found_gear.name}!{rarity_text} {found_gear.description}{quantity_text}"
 
     def create_main_game_interface(self):
-        """Create the main game interface"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
-        self.game_frame = tk.Frame(self.root, bg="#87CEEB")
-        self.game_frame.pack(fill=tk.BOTH, expand=True)
+            """Create the main game interface"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            self.game_frame = tk.Frame(self.root, bg="#87CEEB")
+            self.game_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Player info panel
-        self.info_frame = tk.Frame(self.game_frame, bg="#ADD8E6", relief=tk.RAISED, bd=2)
-        self.info_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+            # Player info panel
+            self.info_frame = tk.Frame(self.game_frame, bg="#ADD8E6", relief=tk.RAISED, bd=2)
+            self.info_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
 
-        self.update_player_info()
+            self.update_player_info()
 
-        # Action buttons frame
-        self.action_frame = tk.Frame(self.game_frame, bg="#87CEEB")
-        self.action_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            # Action buttons frame
+            self.action_frame = tk.Frame(self.game_frame, bg="#87CEEB")
+            self.action_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
-        # Fishing button
-        self.fish_btn = tk.Button(self.action_frame, text="🎣 Go Fishing", 
-                         font=("Helvetica", 14), bg="#2196F3", fg="white",
-                         command=self.fishing_interface)
-        self.fish_btn.pack(side=tk.LEFT, padx=5)
+            # Fishing button
+            self.fish_btn = tk.Button(self.action_frame, text="🎣 Go Fishing", 
+                            font=("Helvetica", 14), bg="#2196F3", fg="white",
+                            command=self.fishing_interface)
+            self.fish_btn.pack(side=tk.LEFT, padx=5)
 
-        # Location selection frame
-        location_frame = tk.Frame(self.action_frame, bg="#87CEEB")
-        location_frame.pack(side=tk.LEFT, padx=20)
+            # Location selection frame
+            location_frame = tk.Frame(self.action_frame, bg="#87CEEB")
+            location_frame.pack(side=tk.LEFT, padx=20)
 
-        location_label = tk.Label(location_frame, text="Location:", 
-                             font=("Helvetica", 12), bg="#87CEEB")
-        location_label.pack(side=tk.LEFT, padx=(0, 5))
+            location_label = tk.Label(location_frame, text="Location:", 
+                                font=("Helvetica", 12), bg="#87CEEB")
+            location_label.pack(side=tk.LEFT, padx=(0, 5))
 
-        # Get available locations
-        available_locations = self.get_available_locations()
-    
-        # Create dropdown with available locations
-        from tkinter import ttk
-        self.location_var = tk.StringVar(value=available_locations[0] if available_locations else "Village Pond")
-        self.location_dropdown = ttk.Combobox(location_frame, textvariable=self.location_var, 
-                                         values=available_locations, state="readonly", width=15)
-        self.location_dropdown.pack(side=tk.LEFT)
+            # Get available locations
+            available_locations = self.get_available_locations()
+        
+            # Create dropdown with available locations
+            from tkinter import ttk
+            self.location_var = tk.StringVar(value=available_locations[0] if available_locations else "Village Pond")
+            self.location_dropdown = ttk.Combobox(location_frame, textvariable=self.location_var, 
+                                            values=available_locations, state="readonly", width=15)
+            self.location_dropdown.pack(side=tk.LEFT)
 
-        # Sell items button
-        self.sell_btn = tk.Button(self.action_frame, text="💰 Sell Items", 
-                     font=("Helvetica", 14), bg="#4CAF50", fg="white",
-                     command=self.open_sell_window)
-        self.sell_btn.pack(side=tk.LEFT, padx=5)
+            # Sell items button
+            self.sell_btn = tk.Button(self.action_frame, text="💰 Sell Items", 
+                        font=("Helvetica", 14), bg="#4CAF50", fg="white",
+                        command=self.open_sell_window)
+            self.sell_btn.pack(side=tk.LEFT, padx=5)
 
-        # Gear button
-        self.gear_btn = tk.Button(self.action_frame, text="⚔️ Manage Gear", 
-                     font=("Helvetica", 14), bg="#FF9800", fg="white",
-                     command=self.open_gear_window)
-        self.gear_btn.pack(side=tk.LEFT, padx=5)
+            # Gear button
+            self.gear_btn = tk.Button(self.action_frame, text="⚔️ Manage Gear", 
+                        font=("Helvetica", 14), bg="#FF9800", fg="white",
+                        command=self.open_gear_window)
+            self.gear_btn.pack(side=tk.LEFT, padx=5)
 
-        # Game log
-        self.log_frame = tk.Frame(self.game_frame, bg="#87CEEB")
-        self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+            # Trade button
+            self.trade_btn = tk.Button(self.action_frame, text="🎴 Trade", 
+                    font=("Helvetica", 14), bg="#9C27B0", fg="white",
+                    command=self.open_trade_window)
+            self.trade_btn.pack(side=tk.LEFT, padx=5)
 
-        log_label = tk.Label(self.log_frame, text="Adventure Log:", 
-                        font=("Helvetica", 14, "bold"), bg="#87CEEB")
-        log_label.pack(anchor=tk.W)
+            # Items button (NEW)
+            self.items_btn = tk.Button(self.action_frame, text="🧪 Use Items", 
+                    font=("Helvetica", 14), bg="#9C27B0", fg="white",
+                    command=self.open_items_window)
+            self.items_btn.pack(side=tk.LEFT, padx=5) 
 
-        self.game_log = tk.Text(self.log_frame, font=("Helvetica", 11), 
-                           height=15, state=tk.DISABLED)
-        self.game_log.pack(fill=tk.BOTH, expand=True)
+            # Eat Fish button (NEW)
+            self.eat_fish_btn = tk.Button(self.action_frame, text="🍽️ Eat Fish", 
+                    font=("Helvetica", 14), bg="#FF5722", fg="white",
+                    command=self.open_eat_fish_window)
+            self.eat_fish_btn.pack(side=tk.LEFT, padx=5)
 
-        # Welcome message
-        self.log_message(f"🎣 Welcome, {self.player.name}!")
-        self.log_message("🌊 Your fishing adventure begins! Don't forget to equip your gear!")
-        self.log_message("=" * 50)
+            # Game log
+            self.log_frame = tk.Frame(self.game_frame, bg="#87CEEB")
+            self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+            log_label = tk.Label(self.log_frame, text="Adventure Log:", 
+                            font=("Helvetica", 14, "bold"), bg="#87CEEB")
+            log_label.pack(anchor=tk.W)
+
+            self.game_log = tk.Text(self.log_frame, font=("Helvetica", 11), 
+                            height=15, state=tk.DISABLED)
+            self.game_log.pack(fill=tk.BOTH, expand=True)
+
+            # Welcome message
+            self.log_message(f"🎣 Welcome, {self.player.name}!")
+            self.log_message("🌊 Your fishing adventure begins! Don't forget to equip your gear!")
+            self.log_message("=" * 50)
 
     def get_available_locations(self):
-        """Get list of locations available to the player"""
-        available = []
-    
-        # For now, just return all unlocked by default locations
-        # Later we can add logic for completed_trades when that system is implemented
-        for loc_data in self.location_data['locations']:
-            location = Location(loc_data)
-            if location.unlocked_by_default:
-                available.append(location.name)
-    
-        return available if available else ["Village Pond"]
+            """Get list of locations available to the player"""
+            available = []
+
+            for loc_data in self.location_data['locations']:
+                location = Location(loc_data)
+                
+                # Check if location is unlocked
+                if location.is_unlocked(self.player.completed_trades if hasattr(self, 'player') and self.player else []):
+                    available.append(location.name)
+
+            return available if available else ["Village Pond"]
 
     def fishing_interface(self):
-        """Handle fishing - costs 1 energy"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
+            """Handle fishing - costs 1 energy"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
 
-        # Check if player is dead
-        if self.player.health <= 0:
-            self.log_message("💀 You cannot fish while defeated!")
-            self.show_game_over_screen()
-            return
+            # Check if player is dead
+            if self.player.health <= 0:
+                self.log_message("💀 You cannot fish while defeated!")
+                self.show_game_over_screen()
+                return
 
-        if not self.player.use_energy(1):
-            self.log_message("❌ Not enough energy to fish!")
-            return
+            if not self.player.use_energy(1):
+                self.log_message("❌ Not enough energy to fish!")
+                return
 
-        # Get selected location from dropdown
-        selected_location = self.location_var.get()
-        result = self.go_fishing(selected_location)
+            # Get selected location from dropdown
+            selected_location = self.location_var.get()
+            result = self.go_fishing(selected_location)
 
-        # Check if enemy encountered and handle combat
-        if result and "🦈 Enemy encountered!" in result:
-            # Find and start combat with enemy
-            location = None
-            for loc_data in self.location_data['locations']:
-                if loc_data['name'] == selected_location:
-                    location = Location(loc_data)
-                    break
-            
-            if location:
-                combat_result = self.encounter_enemy(location)
-                self.log_message(f"🌊 Fishing at {selected_location}: {combat_result}")
-        else:
-            self.log_message(f"🌊 Fishing at {selected_location}: {result}")
+            # Check if enemy encountered and handle combat
+            if result and "🦈 Enemy encountered!" in result:
+                # Find and start combat with enemy
+                location = None
+                for loc_data in self.location_data['locations']:
+                    if loc_data['name'] == selected_location:
+                        location = Location(loc_data)
+                        break
+                
+                if location:
+                    combat_result = self.encounter_enemy(location)
+                    self.log_message(f"🌊 Fishing at {selected_location}: {combat_result}")
+            else:
+                self.log_message(f"🌊 Fishing at {selected_location}: {result}")
 
-        # Check for game over conditions after combat/fishing
-        if self.player.health <= 0:
-            self.log_message("💀 GAME OVER! You have been defeated!")
-            self.root.after(1000, self.show_game_over_screen)
-            return
-        elif self.player.is_game_over():
-            self.log_message("💀 GAME OVER! You ran out of energy!")
-            self.root.after(1000, self.show_game_over_screen)
-            return
+            # Check for game over conditions after combat/fishing
+            if self.player.health <= 0:
+                self.log_message("💀 GAME OVER! You have been defeated!")
+                self.root.after(1000, self.show_game_over_screen)
+                return
+            elif self.player.is_game_over():
+                self.log_message("💀 GAME OVER! You ran out of energy!")
+                self.root.after(1000, self.show_game_over_screen)
+                return
 
-        self.update_player_info()        
-
-        if self.player.is_game_over():
-            self.log_message("💀 GAME OVER! You ran out of energy!")
-            self.root.after(1000, self.show_game_over_screen)
-
-        self.update_player_info()
+            self.update_player_info()        
 
     def log_message(self, message):
-        """Add a message to the game log"""
-        if hasattr(self, 'game_log'):
-            self.game_log.config(state=tk.NORMAL)
-            self.game_log.insert(tk.END, f"{message}\n")
-            self.game_log.config(state=tk.DISABLED)
-            self.game_log.see(tk.END)
+            """Add a message to the game log"""
+            if hasattr(self, 'game_log'):
+                self.game_log.config(state=tk.NORMAL)
+                self.game_log.insert(tk.END, f"{message}\n")
+                self.game_log.config(state=tk.DISABLED)
+                self.game_log.see(tk.END)
 
     def show_game_over_screen(self):
-        """Show game over screen with restart option"""
-        if not hasattr(self, 'player') or self.player is None:
-            return
+            """Show game over screen with restart option"""
+            if not hasattr(self, 'player') or self.player is None:
+                return
+            
+            self.fish_btn.config(state=tk.DISABLED)
+            self.sell_btn.config(state=tk.DISABLED)
+            self.trade_btn.config(state=tk.DISABLED)    
+
+            self.game_over_window = tk.Toplevel(self.root)
+            self.game_over_window.title("Game Over!")
+            self.game_over_window.geometry("1600x1600")
+            self.game_over_window.configure(bg="#2C3E50")
+            self.game_over_window.resizable(True, True)
+
+            self.game_over_window.transient(self.root)
+            self.game_over_window.grab_set()
+
+            title_label = tk.Label(self.game_over_window, text="💀 GAME OVER!", 
+                            font=("Helvetica", 24, "bold"), bg="#2C3E50", fg="#E74C3C")
+            title_label.pack(pady=20)
+
+            energy_label = tk.Label(self.game_over_window, text="You ran out of energy!", 
+                            font=("Helvetica", 16), bg="#2C3E50", fg="white")
+            energy_label.pack(pady=10)
         
-        self.fish_btn.config(state=tk.DISABLED)
-        self.sell_btn.config(state=tk.DISABLED)
-
-        self.game_over_window = tk.Toplevel(self.root)
-        self.game_over_window.title("Game Over!")
-        self.game_over_window.geometry("1600x1600")
-        self.game_over_window.configure(bg="#2C3E50")
-        self.game_over_window.resizable(True, True)
-
-        self.game_over_window.transient(self.root)
-        self.game_over_window.grab_set()
-
-        title_label = tk.Label(self.game_over_window, text="💀 GAME OVER!", 
-                          font=("Helvetica", 24, "bold"), bg="#2C3E50", fg="#E74C3C")
-        title_label.pack(pady=20)
-
-        energy_label = tk.Label(self.game_over_window, text="You ran out of energy!", 
-                           font=("Helvetica", 16), bg="#2C3E50", fg="white")
-        energy_label.pack(pady=10)
-    
-        stats_frame = tk.Frame(self.game_over_window, bg="#34495E", relief=tk.RAISED, bd=2)
-        stats_frame.pack(pady=20, padx=40, fill=tk.X)
-    
-        stats_title = tk.Label(stats_frame, text="Final Stats:", 
-                          font=("Helvetica", 14, "bold"), bg="#34495E", fg="white")
-        stats_title.pack(pady=5)
-    
-        fish_count = sum(1 for item in self.player.inventory if hasattr(item, 'actual_size'))
-        item_count = sum(1 for item in self.player.inventory if hasattr(item, 'item_type'))
-        gear_count = len(self.player.gear_inventory)
-    
-        stats_text = f"""👤 Fisher: {self.player.name}
-    💰 Final Gold: {self.player.gold}g
-    🐟 Fish Caught: {fish_count}
-    📦 Items Found: {item_count}
-    ⚔️ Gear Collected: {gear_count}"""
-    
-        stats_display = tk.Label(stats_frame, text=stats_text, 
-                            font=("Helvetica", 12), bg="#34495E", fg="white",
-                            justify=tk.LEFT)
-        stats_display.pack(pady=10)
-    
-        button_frame = tk.Frame(self.game_over_window, bg="#2C3E50")
-        button_frame.pack(pady=20)
-    
-        start_over_btn = tk.Button(button_frame, text="🔄 Start Over", 
-                              font=("Helvetica", 14, "bold"), bg="#27AE60", fg="white",
-                              command=self.restart_game, width=12)
-        start_over_btn.pack(side=tk.LEFT, padx=10)
-    
-        quit_btn = tk.Button(button_frame, text="❌ Quit Game", 
-                        font=("Helvetica", 14, "bold"), bg="#E74C3C", fg="white",
-                        command=self.root.quit, width=12)
-        quit_btn.pack(side=tk.LEFT, padx=10)
+            stats_frame = tk.Frame(self.game_over_window, bg="#34495E", relief=tk.RAISED, bd=2)
+            stats_frame.pack(pady=20, padx=40, fill=tk.X)
+        
+            stats_title = tk.Label(stats_frame, text="Final Stats:", 
+                            font=("Helvetica", 14, "bold"), bg="#34495E", fg="white")
+            stats_title.pack(pady=5)
+        
+            fish_count = sum(1 for item in self.player.inventory if hasattr(item, 'actual_size'))
+            item_count = sum(1 for item in self.player.inventory if hasattr(item, 'item_type'))
+            gear_count = len(self.player.gear_inventory)
+        
+            stats_text = f"""👤 Fisher: {self.player.name}
+        💰 Final Gold: {self.player.gold}g
+        🐟 Fish Caught: {fish_count}
+        📦 Items Found: {item_count}
+        ⚔️ Gear Collected: {gear_count}"""
+        
+            stats_display = tk.Label(stats_frame, text=stats_text, 
+                                font=("Helvetica", 12), bg="#34495E", fg="white",
+                                justify=tk.LEFT)
+            stats_display.pack(pady=10)
+        
+            button_frame = tk.Frame(self.game_over_window, bg="#2C3E50")
+            button_frame.pack(pady=20)
+        
+            start_over_btn = tk.Button(button_frame, text="🔄 Start Over", 
+                                font=("Helvetica", 14, "bold"), bg="#27AE60", fg="white",
+                                command=self.restart_game, width=12)
+            start_over_btn.pack(side=tk.LEFT, padx=10)
+        
+            quit_btn = tk.Button(button_frame, text="❌ Quit Game", 
+                            font=("Helvetica", 14, "bold"), bg="#E74C3C", fg="white",
+                            command=self.root.quit, width=12)
+            quit_btn.pack(side=tk.LEFT, padx=10)
 
     def restart_game(self):
-        """Restart the entire game"""
-        if hasattr(self, 'game_over_window'):
-            self.game_over_window.destroy()
-    
-        for window_attr in ['sell_window', 'inventory_window', 'gear_window']:
-            if hasattr(self, window_attr):
-                window = getattr(self, window_attr)
-                if window and window.winfo_exists():
-                    window.destroy()
-    
-        if hasattr(self, 'game_frame'):
-            self.game_frame.destroy()
-    
-        self.player = None
-    
-        self.create_widgets()
+            """Restart the entire game"""
+            if hasattr(self, 'game_over_window'):
+                self.game_over_window.destroy()
+        
+            for window_attr in ['sell_window', 'inventory_window', 'gear_window']:
+                if hasattr(self, window_attr):
+                    window = getattr(self, window_attr)
+                    if window and window.winfo_exists():
+                        window.destroy()
+        
+            if hasattr(self, 'game_frame'):
+                self.game_frame.destroy()
+        
+            self.player = None
+        
+            self.create_widgets()
 
     def run(self):
-        self.root.mainloop()
+            self.root.mainloop()
 
 if __name__ == "__main__":
     game = FishingGame()

@@ -11,7 +11,7 @@
     },
     {
       "name": "Rusty Hook",
-      "rarity": 50,
+      "rarity": 20,
       "gold_value": 5,
       "description": "An old fishing hook, still sharp.",
       "item_type": "junk",
@@ -29,7 +29,7 @@
     },
     {
       "name": "Ancient Scroll",
-      "rarity": 70,
+      "rarity": 500,
       "gold_value": 100,
       "description": "Contains forgotten fishing secrets.",
       "item_type": "consumable",
@@ -37,12 +37,39 @@
       "quantity": 5
     },
     {
-      "name": "Bait Bundle",
-      "rarity": 30,
+      "name": "Bait",
+      "rarity": 10,
       "gold_value": 10,
-      "description": "A bundle of high-quality bait that attracts more fish.",
+      "description": "Novice bait.",
       "item_type": "consumable",
-      "effect": "increased_catch_rate for the next 5 catches",
+      "effect": "increased catch rate for the next 3 catches",
+      "quantity": 5
+    },
+    {
+      "name": "Minor Stat Potion",
+      "rarity": 50,
+      "gold_value": 50,
+      "description": "A potion that slightly boosts one of your stats.",
+      "item_type": "consumable",
+      "effect": "increase any skill by 1",
+      "quantity": 10
+    },
+    {
+      "name": "Hasty Elixir",
+      "rarity": 200,
+      "gold_value": 75,
+      "description": "An elixir that boosts your speed.",
+      "item_type": "consumable",
+      "effect": "increase speed by 2",
+      "quantity": 3
+    },
+    {
+      "name": "Health Potion",
+      "rarity": 100,
+      "gold_value": 20,
+      "description": "Healing potion duh",
+      "item_type": "consumable",
+      "effect": "restore 5 health",
       "quantity": 5
     }
   ]

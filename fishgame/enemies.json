@@ -25,6 +25,19 @@
       "loot_value": 10,
       "xp_reward": 15,
       "enemy_type": "common"
+    },
+    {
+      "name": "Water Witch",
+      "rarity": 999,
+      "health": 20,
+      "attack": 10,
+      "defense": 8,
+      "speed": 5,
+      "description": "A mystical being that controls the waters.",
+      "attack_message": "The witch casts a spell that sends waves crashing towards you!",
+      "loot_value": 100,
+      "xp_reward": 150,
+      "enemy_type": "rare"
     }
   ]
 }

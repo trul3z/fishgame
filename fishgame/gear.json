@@ -4,7 +4,7 @@
       "name": "Sturdy Rod",
       "gear_type": "rod",
       "gold_value": 100,
-      "rarity": 20,
+      "rarity": -1,
       "description": "A well-made fishing rod with better balance",
       "quantity": 1,
       "stat_bonus": {
@@ -61,7 +61,7 @@
       "name": "Chain Mail",
       "gear_type": "torso",
       "gold_value": 150,
-      "rarity": 50,
+      "rarity": 250,
       "description": "Metal armor that protects your chest",
       "quantity": 1,
       "stat_bonus": {
@@ -72,7 +72,7 @@
       "name": "Steel Knife",
       "gear_type": "knife",
       "gold_value": 80,
-      "rarity": 40,
+      "rarity": 200,
       "description": "A sharp blade for combat and utility",
       "quantity": 1,
       "stat_bonus": {
@@ -83,7 +83,7 @@
       "name": "Magic Ring",
       "gear_type": "ring",
       "gold_value": 300,
-      "rarity": 90,
+      "rarity": 800,
       "description": "An enchanted ring that enhances all abilities",
       "quantity": 1,
       "stat_bonus": {
@@ -97,7 +97,7 @@
       "name": "Fishing Pants",
       "gear_type": "leg",
       "gold_value": 40,
-      "rarity": 20,
+      "rarity": 100,
       "description": "Water-resistant pants for fishing",
       "quantity": 1,
       "stat_bonus": {
@@ -134,6 +134,30 @@
       "description": "A faded shirt that's seen better days",
       "quantity": 1,
       "stat_bonus": {
+        "defense": 1
+      }
+    },
+    {
+      "name": "Papa's Rod",
+      "gear_type": "rod",
+      "gold_value": 250,
+      "rarity": 200,
+      "description": "A legendary fishing rod passed down through generations",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 3,
+        "speed": 3
+      }
+    },
+    {
+      "name": "Fishing Boots",
+      "gear_type": "foot",
+      "gold_value": 50,
+      "rarity": 50,
+      "description": "Boots designed for fishing, providing comfort and stability",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1,
         "defense": 1
       }
     }

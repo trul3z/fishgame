@@ -3,9 +3,9 @@
     {
       "name": "Fishing Rod Upgrade",
       "type": "gear",
-      "effect": "Increases fishing success rate",
+      "effect": "Get a new rod",
       "gold_value": 150,
-      "description": "Upgrade your fishing rod for better performance and more catches.",
+      "quantity": 1,
       "trigger": {
         "action": "add_gear",
         "target": "Sturdy Rod"
@@ -16,9 +16,9 @@
       "type": "New Location",
       "effect": "Unlock a random new fishing location",
       "gold_value": 200,
-      "description": "Pay a fee to unlock a new fishing location, expanding your fishing opportunities.",
+      "quantity": 20,
       "trigger": {
-        "action": "unlock_locations",
+        "action": "unlock_location",
         "target": "trade_deck_locations"
       }
     },
@@ -27,7 +27,7 @@
       "type": "item",
       "effect": "Restores health",
       "gold_value": 50,
-      "description": "A potion that restores health, useful after a tough fishing battle.",
+      "quantity": 5,
       "trigger": {
         "action": "add_item",
         "target": "Health Potion"
@@ -36,9 +36,9 @@
     {
       "name": "Lucky Necklace",
       "type": "gear",
-      "effect": "Increases luck",
+      "effect": "Get a lucky necklace",
       "gold_value": 100,
-      "description": "A charm said to bring good fortune to those who wear it while fishing.",
+      "quantity": 1,
       "trigger": {
         "action": "add_gear",
         "target": "Lucky Necklace"
@@ -49,7 +49,7 @@
       "type": "knowledge",
       "effect": "Permanently increases luck",
       "gold_value": 300,
-      "description": "Ancient knowledge that improves your fishing intuition.",
+      "quantity": 10,
       "trigger": {
         "action": "increase_stat",
         "target": "luck",
@@ -59,9 +59,9 @@
     {
       "name": "Bait Bundle",
       "type": "item",
-      "effect": "Improves fishing success",
+      "effect": "Get a bundle of bait",
       "gold_value": 75,
-      "description": "A collection of premium bait to attract better fish.",
+      "quantity": 10,
       "trigger": {
         "action": "add_item",
         "target": "Bait Bundle"
@@ -72,12 +72,12 @@
       "type": "knowledge",
       "effect": "Permanently increases multiple stats",
       "gold_value": 500,
-      "description": "A blessing from the master fisherman, said to enhance your skills.",
+      "quantity": 5,
       "trigger": [
         {
           "action": "increase_stat",
           "target": "luck",
-          "amount": 5
+          "amount": 3
         },
         {
           "action": "increase_stat",
