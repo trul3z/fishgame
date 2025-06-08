@@ -10,6 +10,15 @@
       "quantity": 2
     },
     {
+      "name": "Crusty Sock",
+      "rarity": 300,
+      "gold_value": 1,
+      "description": "A sock that has seen better days.",
+      "item_type": "junk",
+      "effect": "none",
+      "quantity": 3
+    },
+    {
       "name": "Rusty Hook",
       "rarity": 20,
       "gold_value": 5,
@@ -20,12 +29,21 @@
     },
     {
       "name": "Treasure Chest",
-      "rarity": 80,
+      "rarity": 800,
       "gold_value": 150,
       "description": "A waterlogged chest containing ancient coins!",
       "item_type": "treasure",
       "effect": "none",
       "quantity": 5
+    },
+    {
+      "name": "Golden Fish Scale",
+      "rarity": 500,
+      "gold_value": 50,
+      "description": "A shimmering scale from a legendary fish.",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 3
     },
     {
       "name": "Ancient Scroll",
@@ -38,7 +56,7 @@
     },
     {
       "name": "Bait",
-      "rarity": 10,
+      "rarity": 75,
       "gold_value": 10,
       "description": "Novice bait.",
       "item_type": "consumable",
@@ -46,8 +64,17 @@
       "quantity": 5
     },
     {
+      "name": "Master Bait",
+      "rarity": 300,
+      "gold_value": 50,
+      "description": "Expert bait for serious fishermen.",
+      "item_type": "consumable",
+      "effect": "increased catch rate for the next 10 catches",
+      "quantity": 2
+    },
+    {
       "name": "Minor Stat Potion",
-      "rarity": 50,
+      "rarity": 100,
       "gold_value": 50,
       "description": "A potion that slightly boosts one of your stats.",
       "item_type": "consumable",
@@ -71,6 +98,15 @@
       "item_type": "consumable",
       "effect": "restore 5 health",
       "quantity": 5
-    }
+    },
+    {
+      "name": "Mysterious Shell",
+      "rarity": 200,
+      "gold_value": 55,
+      "description": "A shell that hums with a strange energy.",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 10
+    }  
   ]
 }

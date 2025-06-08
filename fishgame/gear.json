@@ -65,7 +65,7 @@
       "description": "Metal armor that protects your chest",
       "quantity": 1,
       "stat_bonus": {
-        "defense": 5
+        "defense": 3
       }
     },
     {
@@ -76,7 +76,7 @@
       "description": "A sharp blade for combat and utility",
       "quantity": 1,
       "stat_bonus": {
-        "attack": 4
+        "attack": 3
       }
     },
     {
@@ -159,6 +159,17 @@
       "stat_bonus": {
         "luck": 1,
         "defense": 1
+      }
+    },
+    {
+      "name": "Helmet",
+      "gear_type": "head",
+      "gold_value": 25,
+      "rarity": 100,
+      "description": "A protective helmet for fishing adventures",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 2
       }
     }
   ]

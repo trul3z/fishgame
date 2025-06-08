@@ -21,6 +21,8 @@ class Fish:
 
     def get_sell_value(self):
         """Calculate gold value based on actual size vs average size"""
+        if self.avg_size <= 0:
+            return self.gold_value
         size_multiplier = self.actual_size / self.avg_size
         # Size multiplier affects gold: bigger fish = more gold, smaller = less
         final_value = int(self.gold_value * size_multiplier)
@@ -237,19 +239,19 @@ class Trade:
 class Player:
     def __init__(self):
         # Basic stats
-        self.health = 10
-        self.max_health = 10
+        self.health = 20
+        self.max_health = 20
         self.gold = 0  
-        self.energy = 10 
-        self.max_energy = 30
+        self.energy = 5 
+        self.max_energy = 100000
         self.level = 1
         self.xp = 0
         
         # Base stats (before equipment bonuses)
-        self.base_luck = 0
-        self.base_attack = 3
-        self.base_defense = 3
-        self.base_speed = 3
+        self.base_luck = 10
+        self.base_attack = 10
+        self.base_defense = 10
+        self.base_speed = 10
 
         self.name = ""
         self.backstory = ""
@@ -270,6 +272,8 @@ class Player:
         self.equipped_necklace = None
         self.equipped_ring = None
         self.equipped_knife = None
+
+        self.bait_boost_remaining = 0 
 
     def take_damage(self, damage):
         """Take damage, used in combat"""
@@ -388,7 +392,7 @@ class Player:
     def sell_fish(self, fish):
         """Sell a fish for gold"""
         if fish in self.inventory:
-            gold_earned = fish.gold_value()
+            gold_earned = fish.get_sell_value()
             self.gold += gold_earned
             self.inventory.remove(fish)
             return f"💰 Sold {fish.name} for {gold_earned} gold!"
@@ -397,7 +401,7 @@ class Player:
     def sell_item(self, item):
         """Sell an item for gold"""
         if item in self.inventory:
-            gold_earned = item.gold_value()
+            gold_earned = item.value
             self.gold += gold_earned
             self.inventory.remove(item)
             return f"💰 Sold {item.name} for {gold_earned} gold!"
@@ -435,6 +439,16 @@ class Player:
 
     def get_total_stats(self):
         """Calculate total stats including equipment bonuses"""
+        # Add safety check at the beginning
+        if not hasattr(self, 'base_luck'):
+            self.base_luck = 0
+        if not hasattr(self, 'base_attack'):
+            self.base_attack = 10
+        if not hasattr(self, 'base_defense'):
+            self.base_defense = 10
+        if not hasattr(self, 'base_speed'):
+            self.base_speed = 5
+        
         total_luck = self.base_luck
         total_attack = self.base_attack
         total_defense = self.base_defense
@@ -448,18 +462,22 @@ class Player:
         ]
         
         for gear in equipped_items:
-            if gear and gear.stat_bonus:
+            if gear and hasattr(gear, 'stat_bonus') and gear.stat_bonus:
                 total_luck += gear.stat_bonus.get("luck", 0)
                 total_attack += gear.stat_bonus.get("attack", 0)
                 total_defense += gear.stat_bonus.get("defense", 0)
                 total_speed += gear.stat_bonus.get("speed", 0)
 
-        # Add bonuses from fish in inventory
-        fish_bonuses = self.get_fish_bonuses()
-        total_luck += fish_bonuses["luck"]
-        total_attack += fish_bonuses["attack"]
-        total_defense += fish_bonuses["defense"]
-        total_speed += fish_bonuses["speed"]
+        # Add bonuses from fish in inventory - with safety check
+        try:
+            fish_bonuses = self.get_fish_bonuses()
+            total_luck += fish_bonuses.get("luck", 0)
+            total_attack += fish_bonuses.get("attack", 0)
+            total_defense += fish_bonuses.get("defense", 0)
+            total_speed += fish_bonuses.get("speed", 0)
+        except:
+            # If get_fish_bonuses fails, just skip fish bonuses
+            pass
 
         return {
             "luck": total_luck,
@@ -495,14 +513,150 @@ class FishingGame:
         self.load_json_data()
 
     def create_widgets(self):
-        self.title_label = tk.Label(self.root, text="Tyler's Fishing Game", font=("Helvetica", 24), bg="#87CEEB")
+        # Try to load and display image/gif
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            # Try to load image - change filename to match your image
+            image_path = os.path.join(base_dir, "koda_fishing.gif")  # Change this filename
+            
+            # Load the image/gif
+            self.logo_image = tk.PhotoImage(file=image_path)
+            
+            # Display the image
+            self.logo_label = tk.Label(self.root, image=self.logo_image, bg="#87CEEB")
+            self.logo_label.pack(pady=10)
+            
+            # If it's an animated GIF, start the animation
+            if image_path.lower().endswith('.gif'):
+                self.animate_gif()
+            
+        except Exception as e:
+            print(f"Could not load image: {e}")
+            # If image loading fails, show a text placeholder
+            self.logo_label = tk.Label(self.root, text="🎣", font=("Helvetica", 48), bg="#87CEEB")
+            self.logo_label.pack(pady=10)
+
+        self.title_label = tk.Label(self.root, text="Tyler and Koda's Fishing Game", font=("Helvetica", 24), bg="#87CEEB")
         self.title_label.pack(pady=20)
 
         self.start_button = tk.Button(self.root, text="Start Game", font=("Helvetica", 18), command=self.start_game)
         self.start_button.pack(pady=10)
-    
+
         self.quit_button = tk.Button(self.root, text="Quit", font=("Helvetica", 18), command=self.root.quit)
         self.quit_button.pack(pady=10)
+
+
+    def animate_gif(self):
+        """Animate GIF frames with automatic transitions"""
+        try:
+            # Determine which GIF to load based on current state
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            # Default to koda_fishing.gif if no current_gif is set
+            if not hasattr(self, 'current_gif'):
+                self.current_gif = "koda_fishing"
+            
+            # Choose image path based on current GIF
+            if self.current_gif == "start_adventure":
+                image_path = os.path.join(base_dir, "start_adventure.gif")
+            elif self.current_gif == "village_pond_enter":
+                image_path = os.path.join(base_dir, "village_pond_enter.gif")
+            elif self.current_gif == "village_pond_cast":  # FIXED: removed .gif extension
+                image_path = os.path.join(base_dir, "village_pond_cast.gif")
+            elif self.current_gif == "village_pond":
+                image_path = os.path.join(base_dir, "village_pond.gif")
+            else:
+                image_path = os.path.join(base_dir, "koda_fishing.gif")
+            
+            if not hasattr(self, 'gif_frames'):
+                # Load all frames of the current GIF
+                self.gif_frames = []
+                self.current_frame = 0
+                
+                # Try to load multiple frames
+                frame_index = 0
+                while True:
+                    try:
+                        frame = tk.PhotoImage(file=image_path, format=f"gif -index {frame_index}")
+                        scaled_frame = frame.zoom(10)  # Makes image larger
+                        self.gif_frames.append(scaled_frame)
+                        frame_index += 1
+                    except:
+                        break
+            
+            # If we have multiple frames, animate them
+            if len(self.gif_frames) > 1:
+                # Update the image
+                if hasattr(self, 'logo_label'):
+                    self.logo_label.config(image=self.gif_frames[self.current_frame])
+                
+                # Move to next frame
+                self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
+                
+                # Check for transition from start_adventure to village_pond_enter
+                if (hasattr(self, 'current_gif') and 
+                    self.current_gif == "start_adventure" and 
+                    self.current_frame == 0):  # We've completed a full cycle
+                    
+                    # Initialize cycle counter if not exists
+                    if not hasattr(self, 'start_adventure_cycles'):
+                        self.start_adventure_cycles = 0
+                    
+                    self.start_adventure_cycles += 1
+                    
+                    # After specified cycles, switch to village pond enter
+                    max_cycles = getattr(self, 'max_start_adventure_cycles', 1)
+                    if self.start_adventure_cycles >= max_cycles:
+                        print(f"🎬 Start adventure GIF played {max_cycles} times, switching to village pond enter...")
+                        self.switch_to_village_pond_enter_gif()
+                        # Reset for village pond enter animation
+                        return self.animate_gif()
+                
+                # Check for transition from village_pond_enter to village_pond
+                elif (hasattr(self, 'current_gif') and 
+                    self.current_gif == "village_pond_enter" and 
+                    self.current_frame == 0):  # We've completed a full cycle
+                    
+                    # Initialize cycle counter if not exists
+                    if not hasattr(self, 'village_pond_enter_cycles'):
+                        self.village_pond_enter_cycles = 0
+                    
+                    self.village_pond_enter_cycles += 1
+                    
+                    # After specified cycles, switch to village pond
+                    max_cycles = getattr(self, 'max_village_pond_enter_cycles', 1)
+                    if self.village_pond_enter_cycles >= max_cycles:
+                        print(f"🎬 Village pond enter GIF played {max_cycles} times, switching to village pond...")
+                        self.switch_to_village_pond_gif()
+                        # Reset for village pond animation
+                        return self.animate_gif()
+                
+                # NEW: Check for transition from village_pond_cast back to village_pond
+                elif (hasattr(self, 'current_gif') and 
+                    self.current_gif == "village_pond_cast" and 
+                    self.current_frame == 0):  # We've completed a full cycle
+                    
+                    # Initialize cycle counter if not exists
+                    if not hasattr(self, 'village_pond_cast_cycles'):
+                        self.village_pond_cast_cycles = 0
+                    
+                    self.village_pond_cast_cycles += 1
+                    
+                    # After specified cycles, switch back to village pond
+                    max_cycles = getattr(self, 'max_village_pond_cast_cycles', 1)
+                    if self.village_pond_cast_cycles >= max_cycles:
+                        print(f"🎬 Village pond cast GIF played {max_cycles} times, switching back to village pond...")
+                        self.switch_to_village_pond_gif()
+                        # Reset for village pond animation
+                        return self.animate_gif()
+                
+                # Schedule next frame update
+                self.root.after(100, self.animate_gif)
+                
+        except Exception as e:
+            print(f"GIF animation error: {e}")
 
     def load_json_data(self):
         """Load all the JSON files from the script's directory"""
@@ -551,13 +705,16 @@ class FishingGame:
 
     def go_fishing(self, location_name):
         """Go fishing at a location - can catch fish, items, gear, encounter enemies, or catch nothing"""
+        if not hasattr(self, 'player') or self.player is None:
+            return "No player found! Please start a new game first."
+
         # Find location
         location = None
         for loc_data in self.location_data['locations']:
             if loc_data['name'] == location_name:
                 location = Location(loc_data)
                 break
-    
+
         if not location:
             return "Location not found!"
 
@@ -566,14 +723,19 @@ class FishingGame:
 
         # CHECK FOR BAIT BOOST AND APPLY TO SPAWN CHANCES
         bait_multiplier = 1.0
-        if hasattr(self.player, 'bait_boost_remaining') and self.player.bait_boost_remaining > 0:
+        bait_active_msg = ""
+        
+        # Initialize bait boost if it doesn't exist
+        if not hasattr(self.player, 'bait_boost_remaining'):
+            self.player.bait_boost_remaining = 0
+        
+        # FIXED: Check bait_boost_remaining instead of bait_boost_active
+        if self.player.bait_boost_remaining > 0:
             bait_multiplier = 1.3  # 30% better catch rates
             self.player.bait_boost_remaining -= 1
             remaining = self.player.bait_boost_remaining
             # This message will be returned along with the catch result
             bait_active_msg = f" 🎣 Bait boost active! ({remaining} uses remaining)"
-        else:
-            bait_active_msg = ""
 
         # Apply bait boost to location spawn chances
         boosted_fish_chance = location.fish_spawn_chance * bait_multiplier
@@ -584,33 +746,36 @@ class FishingGame:
         # Stage 1: What happens when you cast your line? (cumulative probability)
         rand = random.random()
         cumulative = 0
-    
+
         cumulative += boosted_fish_chance
         if rand < cumulative:
-            return self.catch_fish(location)
-    
+            result = self.catch_fish(location)
+            return (result or "🎣 Something happened while fishing...") + bait_active_msg
+
         cumulative += boosted_item_chance
         if rand < cumulative:
-            return self.catch_item(location)
-    
+            result = self.catch_item(location)
+            return (result or "📦 Something happened while finding items...") + bait_active_msg
+
         cumulative += boosted_gear_chance
         if rand < cumulative:
-            return self.catch_gear(location)
-    
+            result = self.catch_gear(location)
+            return (result or "⚔️ Something happened while finding gear...") + bait_active_msg
+
         cumulative += location.enemy_spawn_chance
         if rand < cumulative:
-            return "🦈 Enemy encountered!"
+            return "🦈 Enemy encountered!" + bait_active_msg
 
         # Apply luck reduction to "nothing" chance (1% per luck point, max 15% reduction)
         luck_nothing_reduction = min(0.15, player_luck * 0.01)
         adjusted_nothing_chance = max(0.05, location.catch_nothing_chance - luck_nothing_reduction)
-    
+
         cumulative += adjusted_nothing_chance
         if rand < cumulative:
-            return "🎣 Nothing caught... try again!"
+            return "🎣 Nothing caught... try again!" + bait_active_msg
 
         # Catch nothing (remaining probability)
-        return "🎣 Nothing caught... try again!"
+        return "🎣 Nothing caught... try again!" + bait_active_msg
 
     def encounter_enemy(self, location):
         """Encounter an enemy and start combat"""
@@ -822,7 +987,13 @@ class FishingGame:
         
         if not hasattr(self, 'player') or self.player is None:
             return
-        
+
+        # DISABLE ATTACK AND FLEE BUTTONS IMMEDIATELY to prevent spam
+        if hasattr(self, 'attack_btn'):
+            self.attack_btn.config(state=tk.DISABLED)
+        if hasattr(self, 'flee_btn'):
+            self.flee_btn.config(state=tk.DISABLED)
+
         # Initialize attack count if not set
         if not hasattr(self, 'current_attack_count'):
             self.current_attack_count = 0
@@ -833,7 +1004,7 @@ class FishingGame:
         base_damage = player_stats['attack']
         
         # Check for critical hit (luck increases crit chance)
-        crit_chance = 5 + (player_stats['luck'] * 2)  # Base 5% + 2% per luck point
+        crit_chance = 5 + (player_stats['luck'] * 1)  # Base 5% + 1% per luck point
         is_crit = random.randint(1, 100) <= crit_chance
         
         if is_crit:
@@ -874,13 +1045,17 @@ class FishingGame:
         self.root.after(1500, self.enemy_turn)
 
     def enemy_turn(self):
-        """Enemy attacks the player"""
+        """Enemy attacks the player with damage accumulation system"""
         if self.player_turn or not self.current_enemy.is_alive():
             return
         
         if not hasattr(self, 'player') or self.player is None:
             return
 
+        # Initialize damage accumulation if not set
+        if not hasattr(self, 'accumulated_damage'):
+            self.accumulated_damage = 0
+        
         # Initialize attack count if not set
         if not hasattr(self, 'current_attack_count'):
             self.current_attack_count = 0
@@ -888,27 +1063,19 @@ class FishingGame:
         # Calculate enemy damage
         base_damage = self.current_enemy.attack
         player_stats = self.player.get_total_stats()
+        player_defense = player_stats['defense']
         
-        # Player takes damage (reduced by defense)
-        damage_taken = max(1, base_damage - player_stats['defense'])
-        self.player.health -= damage_taken
+        # Accumulate damage from this attack
+        self.accumulated_damage += base_damage
         
- # Use the enemy's attack message if available, otherwise use default
+        # Use the enemy's attack message if available, otherwise use default
         if hasattr(self.current_enemy, 'attack_message'):
             attack_msg = self.current_enemy.attack_message
         else:
             attack_msg = f"{self.current_enemy.name} attacks you!"
         
         self.add_combat_log(f"👹 {attack_msg}")
-        self.add_combat_log(f"💔 You take {damage_taken} damage!")
-        
-        # Update player health display
-        self.player_health_label.config(text=f"❤️ HP: {self.player.health}/{self.player.max_health}")
-        
-        # Check if player is defeated
-        if self.player.health <= 0:
-            self.combat_defeat()
-            return
+        self.add_combat_log(f"⚔️ Attack deals {base_damage} damage (accumulated: {self.accumulated_damage})")
         
         # Increment attack count
         self.current_attack_count += 1
@@ -921,11 +1088,70 @@ class FishingGame:
             self.root.after(1000, self.enemy_turn)
             return
         
-        # All attacks used, switch back to player turn
+        # All attacks done - now apply defense and resolve damage
+        self.resolve_accumulated_damage(player_defense)
+        
+        # Reset for next turn
+        self.accumulated_damage = 0
         self.current_attack_count = 0
         self.player_turn = True
         self.attack_btn.config(state=tk.NORMAL)
         self.flee_btn.config(state=tk.NORMAL)
+
+    def resolve_accumulated_damage(self, player_defense):
+        """Resolve accumulated damage against player defense with variance"""
+        # Add player null check at the beginning
+        if not hasattr(self, 'player') or self.player is None:
+            self.add_combat_log(f"❌ No player found during damage resolution!")
+            return
+        
+        if not hasattr(self, 'accumulated_damage') or self.accumulated_damage <= 0:
+            self.add_combat_log(f"🛡️ No damage to resolve!")
+            return
+        
+        # Calculate base damage after defense
+        base_damage_after_defense = max(0, self.accumulated_damage - player_defense)
+        
+        # Add variance: ±25% of the base damage (minimum 0)
+        if base_damage_after_defense > 0:
+            variance_range = max(1, int(base_damage_after_defense * 0.25))
+            variance = random.randint(-variance_range, variance_range)
+            final_damage = max(0, base_damage_after_defense + variance)
+            
+            # Ensure at least some damage gets through occasionally even with high defense
+            if final_damage == 0 and self.accumulated_damage > 0:
+                # 10% chance for 1 damage to slip through even with perfect defense
+                if random.randint(1, 100) <= 10:
+                    final_damage = 1
+                    self.add_combat_log(f"💢 A lucky hit slips through your defense!")
+        else:
+            final_damage = 0
+        
+        # Apply the final damage
+        if final_damage > 0:
+            self.player.health -= final_damage
+            self.add_combat_log(f"🛡️ Defense blocks {player_defense} damage! You take {final_damage} damage!")
+            
+            # Show damage calculation details
+            if base_damage_after_defense != final_damage:
+                if final_damage > base_damage_after_defense:
+                    self.add_combat_log(f"💔 Unlucky! Variance increased damage by {final_damage - base_damage_after_defense}")
+                else:
+                    self.add_combat_log(f"🍀 Lucky! Variance reduced damage by {base_damage_after_defense - final_damage}")
+        else:
+            self.add_combat_log(f"🛡️ Your defense of {player_defense} completely blocks all {self.accumulated_damage} damage!")
+        
+        # Update player health display - add safety check for UI element
+        if hasattr(self, 'player_health_label') and self.player_health_label.winfo_exists():
+            self.player_health_label.config(text=f"❤️ HP: {self.player.health}/{self.player.max_health}")
+        
+        # Check if player is defeated
+        if self.player.health <= 0:
+            self.combat_defeat()
+            return
+        
+        # Log the round summary
+        self.add_combat_log(f"📊 Round Summary: {self.accumulated_damage} total attack vs {player_defense} defense = {final_damage} damage taken")
 
     def attempt_flee(self):
         """Attempt to flee from combat"""
@@ -1005,21 +1231,40 @@ class FishingGame:
             return
         if not hasattr(self, 'player') or self.player is None:
             return
-        self.add_combat_log(f"💀 Defeat! {self.current_enemy.name} has defeated you!")
-        self.add_combat_log(f"💔 You lost some gold and items...")
         
-        # Penalties for losing
+        self.add_combat_log(f"💀 Defeat! {self.current_enemy.name} has defeated you!")
+        
+        # CHANGED: Don't set health to 1, leave it at 0 for proper game over
+        # The player's health should already be 0 or below from the damage
+        if self.player.health > 0:
+            self.player.health = 0  # Ensure player is actually defeated
+        
+        # Penalties for losing - but only if not completely dead
         gold_lost = min(self.player.gold, self.player.gold // 4)  # Lose 25% of gold
         self.player.gold -= gold_lost
         
-        # Set health to 1 (don't kill player completely)
-        self.player.health = 1
-        
         self.add_combat_log(f"💸 You lost {gold_lost} gold.")
-        self.log_message(f"💀 Defeated by {self.current_enemy.name}! Lost {gold_lost} gold.")
+        self.add_combat_log(f"💀 Your adventure ends here...")
         
-        # End combat after delay
-        self.root.after(3000, self.end_combat)
+        # Log the defeat
+        self.log_message(f"💀 GAME OVER! Defeated by {self.current_enemy.name}!")
+        
+        # End combat and trigger game over
+        self.root.after(3000, self.end_combat_with_game_over)
+
+    def end_combat_with_game_over(self):
+        """End combat and immediately show game over screen"""
+        if hasattr(self, 'combat_window') and self.combat_window.winfo_exists():
+            self.combat_window.destroy()
+        
+        # Clean up combat variables
+        if hasattr(self, 'current_enemy'):
+            delattr(self, 'current_enemy')
+        if hasattr(self, 'combat_log'):
+            delattr(self, 'combat_log')
+        
+        # Show game over screen immediately
+        self.show_game_over_screen()
 
     def end_combat(self):
         """End combat and return to main game"""
@@ -1039,6 +1284,16 @@ class FishingGame:
         """Open trade window to buy trades with gold"""
         if not hasattr(self, 'player') or self.player is None:
             return
+
+        # Prevent multiple gear windows
+        if hasattr(self, 'gear_window') and self.gear_window.winfo_exists():
+            self.gear_window.lift()  # Bring existing window to front
+            return
+        
+        # Disable gear button temporarily
+        if hasattr(self, 'gear_btn'):
+            self.gear_btn.config(state=tk.DISABLED)
+            self.root.after(1000, lambda: self.gear_btn.config(state=tk.NORMAL))
 
         # Check if player has energy to trade
         if not self.player.can_fish():  # Using can_fish() since it checks energy > 0
@@ -1098,6 +1353,8 @@ class FishingGame:
 
     def create_trade_card(self, parent, trade, index):
         """Create a trade card UI element"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
         # Main card frame
         card_frame = tk.Frame(parent, bg="#FFFFFF", relief=tk.RAISED, bd=2)
         card_frame.pack(fill=tk.X, pady=10, padx=10)
@@ -1169,12 +1426,28 @@ class FishingGame:
         # Deduct gold
         self.player.gold -= trade.gold_value
         
-        # Execute trade effect
+        # Execute trade effect using the existing Trade class method
         result = trade.execute_trigger(self.player, self)
         
         # Add to completed trades for location unlocking
         if trade.name not in self.player.completed_trades:
             self.player.completed_trades.append(trade.name)
+        
+        # IMPORTANT FIX: Check for location unlocking and update dropdown
+        if "unlock_location" in str(trade.trigger):
+            # Force update the location dropdown immediately
+            self.update_location_dropdown()
+            
+            # Also add specific unlock keys for the locations.json checking
+            triggers = trade.trigger if isinstance(trade.trigger, list) else [trade.trigger]
+            for trigger in triggers:
+                if trigger.get("action") == "unlock_location":
+                    location_name = trigger.get("target", "")
+                    if location_name:
+                        # Add the specific unlock key that Location.is_unlocked() checks for
+                        location_key = f"unlocked_{location_name.lower().replace(' ', '_')}"
+                        if location_key not in self.player.completed_trades:
+                            self.player.completed_trades.append(location_key)
 
         # Clear current trade options so new ones are generated next time
         self.current_trade_options = []
@@ -1182,10 +1455,6 @@ class FishingGame:
         # Log the trade
         self.log_message(f"🎴 Traded for '{trade.name}' for {trade.gold_value}g! (-1 energy)")
         self.log_message(f"   ✨ {result}")
-        
-        # Update available locations if needed
-        if "unlock_locations" in str(trade.trigger):
-            self.update_location_dropdown()
         
         # Check for game over due to energy loss
         if self.player.is_game_over():
@@ -1291,13 +1560,23 @@ class FishingGame:
         """Open sell window to sell items for gold"""
         if not hasattr(self, 'player') or self.player is None:
             return
+
+        # Prevent multiple sell windows
+        if hasattr(self, 'sell_window') and self.sell_window.winfo_exists():
+            self.sell_window.lift()  # Bring existing window to front
+            return
         
+        # Disable sell button temporarily
+        if hasattr(self, 'sell_btn'):
+            self.sell_btn.config(state=tk.DISABLED)
+            self.root.after(1000, lambda: self.sell_btn.config(state=tk.NORMAL))
+
         # Create new window
         self.sell_window = tk.Toplevel(self.root)
         self.sell_window.title("Sell Items")
         self.sell_window.geometry("700x600")
         self.sell_window.configure(bg="#F0F8FF")
-        
+
         # Window title
         title_label = tk.Label(self.sell_window, text="💰 Sell Items for Gold", 
                               font=("Helvetica", 18, "bold"), bg="#F0F8FF")
@@ -1676,7 +1955,7 @@ class FishingGame:
         stats_text = f"""Stats:
 ❤️ Health: {self.player.health}/{self.player.max_health}
 💰 Gold: {self.player.gold}
-⚡ Energy: {self.player.energy}/{self.player.max_energy}
+⚡ Energy: {self.player.energy}
 🎯 Level: {self.player.level}
 
 🍀 Luck: {total_stats['luck']} (Base: {self.player.base_luck}"""
@@ -2465,13 +2744,23 @@ class FishingGame:
         if not hasattr(self, 'player') or self.player is None:
             return
         
+       # Prevent multiple items windows
+        if hasattr(self, 'items_window') and self.items_window.winfo_exists():
+            self.items_window.lift()  # Bring existing window to front
+            return
+
         # Get consumable items
         consumable_items = [item for item in self.player.inventory if hasattr(item, 'item_type') and item.item_type == "consumable"]
         
         if not consumable_items:
             messagebox.showinfo("No Items", "You don't have any consumable items!")
             return
-        
+
+       # Disable items button temporarily
+        if hasattr(self, 'items_btn'):
+            self.items_btn.config(state=tk.DISABLED)
+            self.root.after(1000, lambda: self.items_btn.config(state=tk.NORMAL))        
+
         # Create new window
         self.items_window = tk.Toplevel(self.root)
         self.items_window.title("Use Items")
@@ -2542,6 +2831,11 @@ class FishingGame:
         if not hasattr(self, 'player') or self.player is None:
             return
         
+       # Prevent multiple eat fish windows
+        if hasattr(self, 'eat_fish_window') and self.eat_fish_window.winfo_exists():
+            self.eat_fish_window.lift()  # Bring existing window to front
+            return
+
         # Get fish from inventory
         fish_items = [item for item in self.player.inventory if hasattr(item, 'actual_size')]
         
@@ -2549,6 +2843,11 @@ class FishingGame:
             messagebox.showinfo("No Fish", "You don't have any fish to eat!")
             return
         
+       # Disable eat fish button temporarily
+        if hasattr(self, 'eat_fish_btn'):
+            self.eat_fish_btn.config(state=tk.DISABLED)
+            self.root.after(1000, lambda: self.eat_fish_btn.config(state=tk.NORMAL))
+
         # Create new window
         self.eat_fish_window = tk.Toplevel(self.root)
         self.eat_fish_window.title("Eat Fish for Energy")
@@ -2564,7 +2863,7 @@ class FishingGame:
         info_frame = tk.Frame(self.eat_fish_window, bg="#FFF8DC")
         info_frame.pack(pady=5)
         
-        energy_label = tk.Label(info_frame, text=f"Current Energy: {self.player.energy}/{self.player.max_energy}", 
+        energy_label = tk.Label(info_frame, text=f"Current Energy: {self.player.energy}", 
                             font=("Helvetica", 14), bg="#FFF8DC", fg="blue")
         energy_label.pack()
         
@@ -2610,8 +2909,11 @@ class FishingGame:
                     bonus_amount = match.group(1)
                     stat_type = match.group(2)
                     effect_text = f" [+{bonus_amount} {stat_type}]"
-            
-            display_text = f"🐟 {fish.name} ({fish.actual_size}in) → +{fish.food_value} energy (will gain: {potential_energy_gain}){effect_text}"
+
+            # Get sell value
+            sell_value = fish.get_sell_value()
+
+            display_text = f"🐟 {fish.name} ({fish.actual_size}in) +{fish.food_value} energy ({sell_value}g){effect_text}"
             self.eat_fish_listbox.insert(tk.END, display_text)
             self.current_fish_items.append(fish)
         
@@ -2660,7 +2962,7 @@ class FishingGame:
 
     def update_energy_preview(self, event=None):
         """Update the energy preview based on selected fish"""
-        if not hasattr(self, 'player') or not hasattr(self, 'eat_fish_listbox'):
+        if not hasattr(self, 'player') or not hasattr(self, 'eat_fish_listbox') or self.player is None:
             return
         
         selections = self.eat_fish_listbox.curselection()
@@ -2915,8 +3217,34 @@ class FishingGame:
         if item.item_type == "consumable":
             import re
             
+            # Handle bait items FIRST (FIXED - moved to correct position and improved detection)
+            if ("catch rate" in item.effect.lower() or 
+                "increased catch rate" in item.effect.lower() or
+                "fishing" in item.effect.lower() or
+                "bait" in item.name.lower()):
+                
+                # Extract number of catches from effect text
+                catch_match = re.search(r'for the next (\d+) catches?', item.effect)
+                if catch_match:
+                    boost_amount = int(catch_match.group(1))
+                else:
+                    # Try to extract any number from the effect
+                    number_match = re.search(r'(\d+)', item.effect)
+                    if number_match:
+                        boost_amount = int(number_match.group(1))
+                    else:
+                        boost_amount = 3  # Default to 3 if no number found
+                
+                # Initialize bait boost if it doesn't exist
+                if not hasattr(self.player, 'bait_boost_remaining'):
+                    self.player.bait_boost_remaining = 0
+                
+                self.player.bait_boost_remaining += boost_amount
+                self.player.inventory.remove(item)
+                return f"Used {item.name}! Increased catch rate for the next {boost_amount} fishing attempts!"
+            
             # Handle stat increase items - now more flexible for any stat and amount
-            if "increase" in item.effect and "by" in item.effect:
+            elif "increase" in item.effect and "by" in item.effect:
                 # Try to match "increase any skill/stat by X"
                 any_stat_match = re.search(r'increase any (?:skill|stat) by (\d+)', item.effect)
                 if any_stat_match:
@@ -2958,19 +3286,6 @@ class FishingGame:
                     self.player.inventory.remove(item)
                     return f"Restored {actual_healing} health!"
             
-                import re
-                catch_match = re.search(r'for the next (\d+) catches?', item.effect)
-                if catch_match:
-                    boost_amount = int(catch_match.group(1))
-                else:
-                    boost_amount = 1
-                
-                if not hasattr(self.player, 'bait_boost_remaining'):
-                    self.player.bait_boost_remaining = 0
-                self.player.bait_boost_remaining += boost_amount
-                self.player.inventory.remove(item)
-                return f"Increased catch rate for the next {boost_amount} fishing attempts!"
-            
             elif "restore" in item.effect and "energy" in item.effect:
                 # Energy restoration items
                 energy_match = re.search(r'restore (\d+) energy', item.effect)
@@ -2986,6 +3301,8 @@ class FishingGame:
 
     def choose_stat_increase(self, item, increase_amount=3, title="Choose Stat to Increase"):
         """Let player choose which stat to increase - now reusable for any item"""
+        if not hasattr(self, 'player') or self.player is None:
+            return "No player found!"
         # Create a simple dialog for stat selection
         choice_window = tk.Toplevel(self.root)
         choice_window.title("Choose Stat to Increase")
@@ -3027,6 +3344,11 @@ class FishingGame:
         result_text = [""]  # Use list to modify from inner functions
         
         def increase_stat(stat_name, stat_attr):
+            if self.player is None:
+                result_text[0] = "No player found!"
+                choice_window.destroy()
+                return
+
             setattr(self.player, stat_attr, getattr(self.player, stat_attr) + increase_amount)
             self.player.inventory.remove(item)
             result_text[0] = f"{stat_name} increased by {increase_amount}!"
@@ -3084,13 +3406,16 @@ class FishingGame:
             name_label.pack(side=tk.LEFT, padx=(0, 10))
             
             # Rest of the stats
-            stats_text = f"❤️ {self.player.health}/{self.player.max_health} | 💰 {self.player.gold}g | ⚡ {self.player.energy}/{self.player.max_energy}"
+            stats_text = f"❤️ {self.player.health}/{self.player.max_health} | 💰 {self.player.gold}g | ⚡ {self.player.energy}"
             stats_label = tk.Label(info_container, text=stats_text, 
                                 font=("Helvetica", 12), bg="#ADD8E6")
             stats_label.pack(side=tk.LEFT)
 
     def begin_adventure(self):
         """Start the main game after character creation"""
+        # Switch to start_adventure.gif
+        self.switch_to_start_adventure_gif()
+        
         name = self.name_entry.get().strip()
 
         if not name:
@@ -3130,6 +3455,164 @@ class FishingGame:
         self.setup_frame.pack_forget()
         self.create_main_game_interface()
 
+    def switch_to_start_adventure_gif(self):
+        """Switch the main GIF to start_adventure.gif"""
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            new_image_path = os.path.join(base_dir, "start_adventure.gif")
+            
+            if os.path.exists(new_image_path):
+                # Reset GIF animation variables
+                self.gif_frames = []
+                self.current_frame = 0
+                
+                # Load new GIF frames
+                frame_index = 0
+                while True:
+                    try:
+                        frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
+                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        self.gif_frames.append(scaled_frame)
+                        frame_index += 1
+                    except:
+                        break
+                
+                # Update the logo label with first frame of new GIF
+                if hasattr(self, 'logo_label') and self.gif_frames:
+                    self.logo_label.config(image=self.gif_frames[0])
+                
+                # Set flag to track current GIF and prepare for transition
+                self.current_gif = "start_adventure"
+                self.start_adventure_cycles = 0  # Count how many times we've played through
+                self.max_start_adventure_cycles = 1  # Play 1 time before switching
+
+                print("✅ Switched to start_adventure.gif")
+            else:
+                print("❌ start_adventure.gif not found, keeping current image")
+                
+        except Exception as e:
+            print(f"Error switching GIF: {e}")
+
+    def switch_to_village_pond_enter_gif(self):
+        """Switch the main GIF to village_pond_enter.gif"""
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            new_image_path = os.path.join(base_dir, "village_pond_enter.gif")
+            
+            if os.path.exists(new_image_path):
+                # Reset GIF animation variables
+                self.gif_frames = []
+                self.current_frame = 0
+                
+                # Load new GIF frames
+                frame_index = 0
+                while True:
+                    try:
+                        frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
+                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        self.gif_frames.append(scaled_frame)
+                        frame_index += 1
+                    except:
+                        break
+                
+                # Update the logo label with first frame of new GIF
+                if hasattr(self, 'logo_label') and self.gif_frames:
+                    self.logo_label.config(image=self.gif_frames[0])
+                    
+                print("✅ Switched to village_pond_enter.gif")
+                
+                # Set flag to indicate we're now on village pond enter GIF
+                self.current_gif = "village_pond_enter"
+                self.village_pond_enter_cycles = 0  # Count how many times we've played through
+                self.max_village_pond_enter_cycles = 1  # Play 1 time before switching to village_pond
+            else:
+                print("❌ village_pond_enter.gif not found, switching directly to village pond")
+                # If the enter gif doesn't exist, go straight to village pond
+                self.switch_to_village_pond_gif()
+                
+        except Exception as e:
+            print(f"Error switching to village pond enter GIF: {e}")
+            # Fallback to village pond if there's an error
+            self.switch_to_village_pond_gif()
+
+    def switch_to_village_pond_gif(self):
+        """Switch the main GIF to village_pond.gif"""
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            new_image_path = os.path.join(base_dir, "village_pond.gif")
+            
+            if os.path.exists(new_image_path):
+                # Reset GIF animation variables
+                self.gif_frames = []
+                self.current_frame = 0
+                
+                # Load new GIF frames
+                frame_index = 0
+                while True:
+                    try:
+                        frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
+                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        self.gif_frames.append(scaled_frame)
+                        frame_index += 1
+                    except:
+                        break
+                
+                # Update the logo label with first frame of new GIF
+                if hasattr(self, 'logo_label') and self.gif_frames:
+                    self.logo_label.config(image=self.gif_frames[0])
+                    
+                print("✅ Switched to village_pond.gif")
+                
+                # Set flag to indicate we're now on village pond GIF (final state)
+                self.current_gif = "village_pond"
+            else:
+                print("❌ village_pond.gif not found, keeping current image")
+                
+        except Exception as e:
+            print(f"Error switching to village pond GIF: {e}")
+
+    def switch_to_village_pond_cast_gif(self):
+        """Switch the main GIF to village_pond_cast.gif for one loop, then back to village_pond.gif"""
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            new_image_path = os.path.join(base_dir, "village_pond_cast.gif")
+            
+            if os.path.exists(new_image_path):
+                # Reset GIF animation variables
+                self.gif_frames = []
+                self.current_frame = 0
+                
+                # Load new GIF frames
+                frame_index = 0
+                while True:
+                    try:
+                        frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
+                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        self.gif_frames.append(scaled_frame)
+                        frame_index += 1
+                    except:
+                        break
+                
+                # Update the logo label with first frame of new GIF
+                if hasattr(self, 'logo_label') and self.gif_frames:
+                    self.logo_label.config(image=self.gif_frames[0])
+                    
+                print("✅ Switched to village_pond_cast.gif")
+                
+                # Set flag to indicate we're now on village pond cast GIF
+                self.current_gif = "village_pond_cast"
+                self.village_pond_cast_cycles = 0  # Count how many times we've played through
+                self.max_village_pond_cast_cycles = 1  # Play 1 time before switching back to village_pond
+            else:
+                print("❌ village_pond_cast.gif not found, staying on current gif")
+                
+        except Exception as e:
+            print(f"Error switching to village pond cast GIF: {e}")
+
     def catch_fish(self, location):
             """Catch a fish at this location"""
             if not hasattr(self, 'player') or self.player is None:
@@ -3152,7 +3635,7 @@ class FishingGame:
             for fish in available_fish:
                 rarity = fish.get('rarity', 1)
                 # Luck slightly increases weight for rarer fish (but not too much)
-                luck_bonus = player_luck * (rarity / 2000)  # Small bonus for rare fish
+                luck_bonus = player_luck * (rarity / 4000)  # Small bonus for rare fish
                 weight = max(1, 1000 - rarity + luck_bonus)
                 weights.append(weight)
         
@@ -3274,12 +3757,6 @@ class FishingGame:
             self.action_frame = tk.Frame(self.game_frame, bg="#87CEEB")
             self.action_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
-            # Fishing button
-            self.fish_btn = tk.Button(self.action_frame, text="🎣 Go Fishing", 
-                            font=("Helvetica", 14), bg="#2196F3", fg="white",
-                            command=self.fishing_interface)
-            self.fish_btn.pack(side=tk.LEFT, padx=5)
-
             # Location selection frame
             location_frame = tk.Frame(self.action_frame, bg="#87CEEB")
             location_frame.pack(side=tk.LEFT, padx=20)
@@ -3297,6 +3774,12 @@ class FishingGame:
             self.location_dropdown = ttk.Combobox(location_frame, textvariable=self.location_var, 
                                             values=available_locations, state="readonly", width=15)
             self.location_dropdown.pack(side=tk.LEFT)
+
+            # Fishing button
+            self.fish_btn = tk.Button(self.action_frame, text="🎣 Go Fishing", 
+                            font=("Helvetica", 14), bg="#2196F3", fg="white",
+                            command=self.fishing_interface)
+            self.fish_btn.pack(side=tk.LEFT, padx=5)
 
             # Sell items button
             self.sell_btn = tk.Button(self.action_frame, text="💰 Sell Items", 
@@ -3359,8 +3842,12 @@ class FishingGame:
             return available if available else ["Village Pond"]
 
     def fishing_interface(self):
-            """Handle fishing - costs 1 energy"""
+        """Handle fishing - costs 1 energy"""
+        if hasattr(self, 'fish_btn'):
+            self.fish_btn.config(state=tk.DISABLED)
+        try:
             if not hasattr(self, 'player') or self.player is None:
+                self.log_message("❌ No player found! Please start a new game.")
                 return
 
             # Check if player is dead
@@ -3377,32 +3864,40 @@ class FishingGame:
             selected_location = self.location_var.get()
             result = self.go_fishing(selected_location)
 
+            if selected_location == "Village Pond":
+                self.switch_to_village_pond_cast_gif()
+        
             # Check if enemy encountered and handle combat
             if result and "🦈 Enemy encountered!" in result:
-                # Find and start combat with enemy
-                location = None
-                for loc_data in self.location_data['locations']:
-                    if loc_data['name'] == selected_location:
-                        location = Location(loc_data)
-                        break
-                
-                if location:
-                    combat_result = self.encounter_enemy(location)
-                    self.log_message(f"🌊 Fishing at {selected_location}: {combat_result}")
+                    # Find and start combat with enemy
+                    location = None
+                    for loc_data in self.location_data['locations']:
+                        if loc_data['name'] == selected_location:
+                            location = Location(loc_data)
+                            break
+                    
+                    if location:
+                        combat_result = self.encounter_enemy(location)
+                        self.log_message(f"🌊 Fishing at {selected_location}: {combat_result}")
             else:
-                self.log_message(f"🌊 Fishing at {selected_location}: {result}")
+                    self.log_message(f"🌊 Fishing at {selected_location}: {result}")
 
-            # Check for game over conditions after combat/fishing
+                # Check for game over conditions after combat/fishing
             if self.player.health <= 0:
-                self.log_message("💀 GAME OVER! You have been defeated!")
-                self.root.after(1000, self.show_game_over_screen)
-                return
+                    self.log_message("💀 GAME OVER! You have been defeated!")
+                    self.root.after(1000, self.show_game_over_screen)
+                    return
             elif self.player.is_game_over():
-                self.log_message("💀 GAME OVER! You ran out of energy!")
-                self.root.after(1000, self.show_game_over_screen)
-                return
+                    self.log_message("💀 GAME OVER! You ran out of energy!")
+                    self.root.after(1000, self.show_game_over_screen)
+                    return
 
             self.update_player_info()        
+
+        finally:
+            # Re-enable fishing button after a short delay
+            if hasattr(self, 'fish_btn'):
+                self.root.after(500, lambda: self.fish_btn.config(state=tk.NORMAL))
 
     def log_message(self, message):
             """Add a message to the game log"""
@@ -3413,65 +3908,71 @@ class FishingGame:
                 self.game_log.see(tk.END)
 
     def show_game_over_screen(self):
-            """Show game over screen with restart option"""
-            if not hasattr(self, 'player') or self.player is None:
-                return
-            
-            self.fish_btn.config(state=tk.DISABLED)
-            self.sell_btn.config(state=tk.DISABLED)
-            self.trade_btn.config(state=tk.DISABLED)    
+        """Show game over screen with restart option"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        self.fish_btn.config(state=tk.DISABLED)
+        self.sell_btn.config(state=tk.DISABLED)
+        self.trade_btn.config(state=tk.DISABLED)    
 
-            self.game_over_window = tk.Toplevel(self.root)
-            self.game_over_window.title("Game Over!")
-            self.game_over_window.geometry("1600x1600")
-            self.game_over_window.configure(bg="#2C3E50")
-            self.game_over_window.resizable(True, True)
+        self.game_over_window = tk.Toplevel(self.root)
+        self.game_over_window.title("Game Over!")
+        self.game_over_window.geometry("1600x1600")
+        self.game_over_window.configure(bg="#2C3E50")
+        self.game_over_window.resizable(True, True)
 
-            self.game_over_window.transient(self.root)
-            self.game_over_window.grab_set()
+        self.game_over_window.transient(self.root)
+        self.game_over_window.grab_set()
 
-            title_label = tk.Label(self.game_over_window, text="💀 GAME OVER!", 
-                            font=("Helvetica", 24, "bold"), bg="#2C3E50", fg="#E74C3C")
-            title_label.pack(pady=20)
+        title_label = tk.Label(self.game_over_window, text="💀 GAME OVER!", 
+                        font=("Helvetica", 24, "bold"), bg="#2C3E50", fg="#E74C3C")
+        title_label.pack(pady=20)
 
-            energy_label = tk.Label(self.game_over_window, text="You ran out of energy!", 
+        # Determine cause of death
+        if self.player.health <= 0:
+            cause_label = tk.Label(self.game_over_window, text="You were defeated in combat!", 
                             font=("Helvetica", 16), bg="#2C3E50", fg="white")
-            energy_label.pack(pady=10)
-        
-            stats_frame = tk.Frame(self.game_over_window, bg="#34495E", relief=tk.RAISED, bd=2)
-            stats_frame.pack(pady=20, padx=40, fill=tk.X)
-        
-            stats_title = tk.Label(stats_frame, text="Final Stats:", 
-                            font=("Helvetica", 14, "bold"), bg="#34495E", fg="white")
-            stats_title.pack(pady=5)
-        
-            fish_count = sum(1 for item in self.player.inventory if hasattr(item, 'actual_size'))
-            item_count = sum(1 for item in self.player.inventory if hasattr(item, 'item_type'))
-            gear_count = len(self.player.gear_inventory)
-        
-            stats_text = f"""👤 Fisher: {self.player.name}
-        💰 Final Gold: {self.player.gold}g
-        🐟 Fish Caught: {fish_count}
-        📦 Items Found: {item_count}
-        ⚔️ Gear Collected: {gear_count}"""
-        
-            stats_display = tk.Label(stats_frame, text=stats_text, 
-                                font=("Helvetica", 12), bg="#34495E", fg="white",
-                                justify=tk.LEFT)
-            stats_display.pack(pady=10)
-        
-            button_frame = tk.Frame(self.game_over_window, bg="#2C3E50")
-            button_frame.pack(pady=20)
-        
-            start_over_btn = tk.Button(button_frame, text="🔄 Start Over", 
-                                font=("Helvetica", 14, "bold"), bg="#27AE60", fg="white",
-                                command=self.restart_game, width=12)
-            start_over_btn.pack(side=tk.LEFT, padx=10)
-        
-            quit_btn = tk.Button(button_frame, text="❌ Quit Game", 
-                            font=("Helvetica", 14, "bold"), bg="#E74C3C", fg="white",
-                            command=self.root.quit, width=12)
-            quit_btn.pack(side=tk.LEFT, padx=10)
+        else:
+            cause_label = tk.Label(self.game_over_window, text="You ran out of energy!", 
+                            font=("Helvetica", 16), bg="#2C3E50", fg="white")
+        cause_label.pack(pady=10)
+
+        # Rest of the method stays the same...
+        stats_frame = tk.Frame(self.game_over_window, bg="#34495E", relief=tk.RAISED, bd=2)
+        stats_frame.pack(pady=20, padx=40, fill=tk.X)
+
+        stats_title = tk.Label(stats_frame, text="Final Stats:", 
+                        font=("Helvetica", 14, "bold"), bg="#34495E", fg="white")
+        stats_title.pack(pady=5)
+
+        fish_count = sum(1 for item in self.player.inventory if hasattr(item, 'actual_size'))
+        item_count = sum(1 for item in self.player.inventory if hasattr(item, 'item_type'))
+        gear_count = len(self.player.gear_inventory)
+
+        stats_text = f"""👤 Fisher: {self.player.name}
+    💰 Final Gold: {self.player.gold}g
+    🐟 Fish Caught: {fish_count}
+    📦 Items Found: {item_count}
+    ⚔️ Gear Collected: {gear_count}"""
+
+        stats_display = tk.Label(stats_frame, text=stats_text, 
+                            font=("Helvetica", 12), bg="#34495E", fg="white",
+                            justify=tk.LEFT)
+        stats_display.pack(pady=10)
+
+        button_frame = tk.Frame(self.game_over_window, bg="#2C3E50")
+        button_frame.pack(pady=20)
+
+        start_over_btn = tk.Button(button_frame, text="🔄 Start Over", 
+                            font=("Helvetica", 14, "bold"), bg="#27AE60", fg="white",
+                            command=self.restart_game, width=12)
+        start_over_btn.pack(side=tk.LEFT, padx=10)
+
+        quit_btn = tk.Button(button_frame, text="❌ Quit Game", 
+                        font=("Helvetica", 14, "bold"), bg="#E74C3C", fg="white",
+                        command=self.root.quit, width=12)
+        quit_btn.pack(side=tk.LEFT, padx=10)
 
     def restart_game(self):
             """Restart the entire game"""
