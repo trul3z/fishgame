@@ -31,6 +31,21 @@
       "unlock condition": "None"
     },
     {
+      "name": "Village Pond (Deep)",
+      "description": "A deeper section of the village pond, home to larger fish",
+      "fish types": ["Common", "Rare"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["Common", "Rare"],
+      "fish spawn chance": 0.5,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.1,
+      "enemy spawn chance": 0.2,
+      "catch nothing chance": 0.1,
+      "fishing license required": false,
+      "Unlocked by default": false,
+      "unlock condition": "Explore the village pond"
+    },
+    {
       "name": "Ocean Shore",
       "description": "A sandy beach where the ocean meets the land, teeming with life",
       "fish types": ["Rare", "Ocean", "Shore"],

@@ -15,11 +15,11 @@
       "name": "Lucky Necklace",
       "gear_type": "necklace",
       "gold_value": 200,
-      "rarity": 40,
+      "rarity": 900,
       "description": "A charm said to bring good fortune to those who wear it while fishing.",
       "quantity": 1,
       "stat_bonus": {
-        "luck": 5
+        "luck": 3
       }
     },
     {
@@ -42,7 +42,7 @@
       "description": "Sturdy boots that improve your footing",
       "quantity": 1,
       "stat_bonus": {
-        "speed": 2,
+        "speed": 1,
         "defense": 1
       }
     },
@@ -76,7 +76,7 @@
       "description": "A sharp blade for combat and utility",
       "quantity": 1,
       "stat_bonus": {
-        "attack": 3
+        "attack": 2
       }
     },
     {
@@ -171,6 +171,41 @@
       "stat_bonus": {
         "defense": 2
       }
+    },
+    {
+      "name": "Spinny Hat",
+      "gear_type": "head",
+      "gold_value": 15,
+      "rarity": 50,
+      "description": "A fun hat with a spinning top, bringing joy to fishing",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1
+      }
+    },
+    {
+      "name": "Bulletproof Vest",
+      "gear_type": "torso",
+      "gold_value": 500,
+      "rarity": 899,
+      "description": "Really helps when you get shot in the torso",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 2,
+        "luck": 1
+      }
+    },
+    {
+      "name": "Gloves of Dexterity",
+      "gear_type": "glove",
+      "gold_value": 120,
+      "rarity": 500,
+      "description": "Gloves that enhance your dexterity and grip",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 1,
+        "speed": 2
+      }
     }
-  ]
+]
 }

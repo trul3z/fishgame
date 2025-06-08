@@ -246,6 +246,7 @@ class Player:
         self.max_energy = 100000
         self.level = 1
         self.xp = 0
+        self.xp_to_next_level = 10  # XP needed to level up
         
         # Base stats (before equipment bonuses)
         self.base_luck = 10
@@ -302,6 +303,44 @@ class Player:
             self.energy -= amount
             return True
         return False
+
+    def add_xp(self, amount):
+        """Add XP and check for level up"""
+        self.xp += amount
+        
+        # Check for level up
+        if self.xp >= self.xp_to_next_level:
+            return self.level_up()
+        
+        return None
+    
+    def level_up(self):
+        """Handle level up - return True if leveled up"""
+        if self.xp >= self.xp_to_next_level:
+            self.level += 1
+            self.xp -= self.xp_to_next_level
+            
+            # Increase XP requirement for next level (scales with level)
+            self.xp_to_next_level = int(self.xp_to_next_level * 1.2)  # 20% increase each level
+            
+            # Heal player on level up
+            old_health = self.health
+            self.health = min(self.max_health, self.health + 5)  # Heal 5 HP on level up
+            healing = self.health - old_health
+            
+            return f"🎉 LEVEL UP! Now level {self.level}! (+{healing} HP restored)"
+        
+        return None
+    
+    def get_xp_progress(self):
+        """Get XP progress as percentage"""
+        if self.xp_to_next_level <= 0:
+            return 100
+        return min(100, (self.xp / self.xp_to_next_level) * 100)
+    
+    def get_xp_display(self):
+        """Get XP display string"""
+        return f"{self.xp}/{self.xp_to_next_level} XP"
 
     def is_game_over(self):
         """Check if game is over (energy reaches 0)"""
@@ -509,6 +548,7 @@ class FishingGame:
         self.root.geometry("1260x720")  
         self.root.resizable(True, True)
         self.root.configure(bg="#87CEEB")
+        self.root.state('zoomed') 
         self.create_widgets()
         self.load_json_data()
 
@@ -546,7 +586,6 @@ class FishingGame:
 
         self.quit_button = tk.Button(self.root, text="Quit", font=("Helvetica", 18), command=self.root.quit)
         self.quit_button.pack(pady=10)
-
 
     def animate_gif(self):
         """Animate GIF frames with automatic transitions"""
@@ -1213,7 +1252,8 @@ class FishingGame:
         xp_reward = self.current_enemy.xp_reward
                
         self.player.gold += gold_reward
-        self.player.xp += xp_reward
+        # Add XP and check for level up
+        level_up_message = self.player.add_xp(xp_reward)
 
         self.add_combat_log(f"💰 You earned {gold_reward} gold!")
         if xp_reward > 0:
@@ -1221,9 +1261,13 @@ class FishingGame:
         
         # Log victory in main game log
         self.log_message(f"⚔️ Defeated {self.current_enemy.name}! Earned {gold_reward} gold.")
-        
-        # End combat after delay
-        self.root.after(1500, self.end_combat)
+        if level_up_message:
+            self.log_message(f"🎉 {level_up_message}")
+
+        if level_up_message:
+            self.root.after(2000, lambda: self.end_combat_then_level_up(level_up_message))
+        else:
+            self.root.after(1500, self.end_combat)
 
     def combat_defeat(self):
         """Player loses the combat"""
@@ -1251,6 +1295,12 @@ class FishingGame:
         
         # End combat and trigger game over
         self.root.after(3000, self.end_combat_with_game_over)
+
+    def end_combat_then_level_up(self, level_up_message):
+        """End combat then show level up choice"""
+        self.end_combat()
+        # Small delay before showing level up window
+        self.root.after(500, lambda: self.show_level_up_choice(level_up_message))
 
     def end_combat_with_game_over(self):
         """End combat and immediately show game over screen"""
@@ -1280,6 +1330,105 @@ class FishingGame:
         if hasattr(self, 'combat_log'):
             delattr(self, 'combat_log')
 
+    def show_level_up_choice(self, level_up_message):
+        """Show level up stat choice window - simplified to +1 single stat only"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Create level up window
+        level_window = tk.Toplevel(self.root)
+        level_window.title("🎉 LEVEL UP!")
+        level_window.geometry("600x800")
+        level_window.configure(bg="#FFD700")
+        level_window.transient(self.root)
+        level_window.grab_set()
+        
+        # Celebration title
+        title_label = tk.Label(level_window, text="🎉 LEVEL UP! 🎉", 
+                            font=("Helvetica", 20, "bold"), bg="#FFD700", fg="#8B4513")
+        title_label.pack(pady=15)
+        
+        # Level up message
+        message_label = tk.Label(level_window, text=level_up_message, 
+                                font=("Helvetica", 14), bg="#FFD700", fg="#8B4513")
+        message_label.pack(pady=5)
+        
+        # Choice instruction
+        choice_label = tk.Label(level_window, text="Choose which stat to increase by +1:", 
+                            font=("Helvetica", 14, "bold"), bg="#FFD700", fg="#8B4513")
+        choice_label.pack(pady=10)
+        
+        # Current stats display
+        stats = self.player.get_total_stats()
+        stats_text = f"Current Stats:\n🍀 Luck: {stats['luck']} → {stats['luck'] + 1}\n⚔️ Attack: {stats['attack']} → {stats['attack'] + 1}\n🛡️ Defense: {stats['defense']} → {stats['defense'] + 1}\n💨 Speed: {stats['speed']} → {stats['speed'] + 1}"
+        
+        stats_display = tk.Label(level_window, text=stats_text, 
+                                font=("Helvetica", 11), bg="#FFD700", fg="#4B0082",
+                                justify=tk.CENTER)
+        stats_display.pack(pady=15)
+        
+        # Button frame
+        button_frame = tk.Frame(level_window, bg="#FFD700")
+        button_frame.pack(pady=20)
+        
+        # Single stat buttons (+1 each)
+        luck_btn = tk.Button(button_frame, text="🍀 +1 Luck", 
+                            font=("Helvetica", 12, "bold"), bg="#FFD700", fg="black",
+                            command=lambda: self.apply_level_bonus("luck", 1, level_window),
+                            width=12, height=2)
+        luck_btn.pack(pady=5)
+        
+        attack_btn = tk.Button(button_frame, text="⚔️ +1 Attack", 
+                            font=("Helvetica", 12, "bold"), bg="#FF4444", fg="white",
+                            command=lambda: self.apply_level_bonus("attack", 1, level_window),
+                            width=12, height=2)
+        attack_btn.pack(pady=5)
+        
+        defense_btn = tk.Button(button_frame, text="🛡️ +1 Defense", 
+                            font=("Helvetica", 12, "bold"), bg="#4444FF", fg="white",
+                            command=lambda: self.apply_level_bonus("defense", 1, level_window),
+                            width=12, height=2)
+        defense_btn.pack(pady=5)
+        
+        speed_btn = tk.Button(button_frame, text="💨 +1 Speed", 
+                            font=("Helvetica", 12, "bold"), bg="#44FF44", fg="black",
+                            command=lambda: self.apply_level_bonus("speed", 1, level_window),
+                            width=12, height=2)
+        speed_btn.pack(pady=5)
+    
+    def apply_level_bonus(self, stat, amount, level_window):
+        """Apply single stat bonus using existing increase_stat logic"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Use existing increase_stat logic from Trade class
+        if stat == "luck":
+            self.player.base_luck += amount
+            bonus_text = f"+{amount} 🍀 Luck"
+        elif stat == "attack":
+            self.player.base_attack += amount
+            bonus_text = f"+{amount} ⚔️ Attack"
+        elif stat == "defense":
+            self.player.base_defense += amount
+            bonus_text = f"+{amount} 🛡️ Defense"
+        elif stat == "speed":
+            self.player.base_speed += amount
+            bonus_text = f"+{amount} 💨 Speed"
+        else:
+            bonus_text = "Unknown stat"
+        
+        # Log the bonus
+        self.log_message(f"📈 Level {self.player.level} bonus: {bonus_text}")
+        
+        # Update displays
+        self.update_player_info()
+        
+        # Close level up window
+        level_window.destroy()
+        
+        # Show confirmation
+        messagebox.showinfo("Level Up Complete!", f"Level {self.player.level} bonus applied:\n{bonus_text}")
+    
     def open_trade_window(self):
         """Open trade window to buy trades with gold"""
         if not hasattr(self, 'player') or self.player is None:
@@ -1328,7 +1477,7 @@ class FishingGame:
                         font=("Helvetica", 14), bg="#F5F5DC", fg="green")
         gold_label.pack(side=tk.LEFT, padx=10)
 
-        energy_label = tk.Label(info_frame, text=f"Energy: {self.player.energy}/{self.player.max_energy}", 
+        energy_label = tk.Label(info_frame, text=f"Energy: {self.player.energy}", 
                         font=("Helvetica", 14), bg="#F5F5DC", fg="blue")
         energy_label.pack(side=tk.LEFT, padx=10)
 
@@ -3386,30 +3535,99 @@ class FishingGame:
         
         return result_text[0] if result_text[0] else f"{item.name} use cancelled."
 
-    def update_player_info(self):
-            """Update the player information display"""
+    def explore_interface(self):
+        """Handle exploration - costs 1 energy and can trigger special events"""
+        if hasattr(self, 'explore_btn'):
+            self.explore_btn.config(state=tk.DISABLED)
+        
+        try:
             if not hasattr(self, 'player') or self.player is None:
+                self.log_message("❌ No player found! Please start a new game.")
                 return
+
+            if self.player.health <= 0:
+                self.log_message("💀 You cannot explore while defeated!")
+                self.show_game_over_screen()
+                return
+
+            if not self.player.use_energy(1):
+                self.log_message("❌ Not enough energy to explore!")
+                return
+
+            selected_location = self.location_var.get()
             
-            if hasattr(self, 'info_frame'):
-                for widget in self.info_frame.winfo_children():
-                    widget.destroy()
+            # Initialize exploration counters if they don't exist
+            if not hasattr(self.player, 'exploration_counts'):
+                self.player.exploration_counts = {}
             
-                info_container = tk.Frame(self.info_frame, bg="#ADD8E6")
+            # Increment exploration count for this location
+            if selected_location not in self.player.exploration_counts:
+                self.player.exploration_counts[selected_location] = 0
+            self.player.exploration_counts[selected_location] += 1
+            
+            # Check for special encounters based on location and exploration count
+            special_event_occurred = self.check_special_exploration_events(selected_location)
+            
+            if not special_event_occurred:
+                # Regular exploration results
+                result = self.regular_exploration(selected_location)
+                self.log_message(f"🗺️ Exploring {selected_location}: {result}")
+
+            # Check for newly unlocked locations after exploration
+            self.check_and_unlock_locations()
+
+            if self.player.is_game_over():
+                self.log_message("💀 GAME OVER! You ran out of energy!")
+                self.root.after(1000, self.show_game_over_screen)
+                return
+
+            self.update_player_info()
+
+        finally:
+            if hasattr(self, 'explore_btn'):
+                self.root.after(500, lambda: self.explore_btn.config(state=tk.NORMAL))
+
+    def update_player_info(self):
+        """Modified to show XP and level"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        if hasattr(self, 'info_frame'):
+            for widget in self.info_frame.winfo_children():
+                widget.destroy()
+        
+            info_container = tk.Frame(self.info_frame, bg="#ADD8E6")
             info_container.pack(pady=5)
             
-            # Make player name clickable
-            name_label = tk.Label(info_container, text=f"👤 {self.player.name}", 
+            # Make player name clickable with level
+            name_level_text = f"👤 {self.player.name} (Lv.{self.player.level})"
+            name_label = tk.Label(info_container, text=name_level_text, 
                                 font=("Helvetica", 12, "bold"), bg="#ADD8E6", 
                                 fg="blue", cursor="hand2")
             name_label.bind("<Button-1>", lambda e: self.open_inventory_window())
             name_label.pack(side=tk.LEFT, padx=(0, 10))
             
-            # Rest of the stats
-            stats_text = f"❤️ {self.player.health}/{self.player.max_health} | 💰 {self.player.gold}g | ⚡ {self.player.energy}"
+            # Rest of the stats with XP
+            xp_progress = self.player.get_xp_progress()
+            stats_text = f"❤️ {self.player.health}/{self.player.max_health} | 💰 {self.player.gold}g | ⚡ {self.player.energy} | ⭐ {self.player.get_xp_display()}"
             stats_label = tk.Label(info_container, text=stats_text, 
                                 font=("Helvetica", 12), bg="#ADD8E6")
             stats_label.pack(side=tk.LEFT)
+            
+            # XP progress bar
+            if xp_progress < 100:  # Only show progress bar if not at max XP
+                xp_bar_frame = tk.Frame(info_container, bg="#ADD8E6")
+                xp_bar_frame.pack(side=tk.LEFT, padx=(10, 0))
+                
+                # Create simple text-based progress bar
+                bar_width = 20
+                filled_width = int((xp_progress / 100) * bar_width)
+                empty_width = bar_width - filled_width
+                progress_bar = "█" * filled_width + "░" * empty_width
+                
+                xp_bar_label = tk.Label(xp_bar_frame, text=f"[{progress_bar}] {xp_progress:.0f}%", 
+                                       font=("Courier", 10), bg="#ADD8E6", fg="purple")
+                xp_bar_label.pack()
 
     def begin_adventure(self):
         """Start the main game after character creation"""
@@ -3645,12 +3863,25 @@ class FishingGame:
             # Add to player's inventory
             self.player.add_fish(caught_fish)
 
+            # Give XP based on fish rarity (1-3 XP for most fish)
+            fish_xp = max(1, min(5, int(caught_fish.rarity / 20)))  # 1-5 XP based on rarity
+            level_up_message = self.player.add_xp(fish_xp)
+
             # Check for fish effects from JSON data
             effect_message = ""
             if hasattr(caught_fish, 'fish_effect') and caught_fish.fish_effect != "none":
                 effect_message = f" ✨ {caught_fish.fish_effect}!"
 
-            return f"🐟 Caught a {caught_fish.name} ({caught_fish.actual_size} inches)! Food value: {caught_fish.food_value} energy{effect_message}"
+            result = f"🐟 Caught a {caught_fish.name} ({caught_fish.actual_size} inches)! Food value: {caught_fish.food_value} energy (+{fish_xp} XP){effect_message}"
+
+            # HANDLE LEVEL UP BEFORE RETURNING
+            if level_up_message:
+                self.log_message(result)
+                self.log_message(f"🎉 {level_up_message}")
+                # Show level up choice after a short delay
+                self.root.after(1000, lambda: self.show_level_up_choice(level_up_message))
+            
+            return result
 
     def catch_item(self, location):
             """Find an item while fishing"""
@@ -3721,7 +3952,11 @@ class FishingGame:
             gear_name = found_gear.name
             self.world_gear_quantities[gear_name] -= 1
             quantity_left = self.world_gear_quantities[gear_name]
-        
+
+            # Give XP based on gear rarity (2-8 XP)
+            gear_xp = max(2, min(10, int(found_gear.rarity / 10)))  # 2-10 XP based on rarity
+            level_up_message = self.player.add_xp(gear_xp)
+
             # Rarity and quantity messages
             rarity_text = ""
             if found_gear.rarity >= 80:
@@ -3738,7 +3973,16 @@ class FishingGame:
             elif quantity_left <= 3:
                 quantity_text = f""
 
-            return f"⚔️ Found {found_gear.name}!{rarity_text} {found_gear.description}{quantity_text}"
+            result = f"⚔️ Found {found_gear.name}!{rarity_text} {found_gear.description}{quantity_text}"
+
+            # Handle level up if it occurred
+            if level_up_message:
+                self.log_message(result)
+                self.log_message(f"🎉 {level_up_message}")
+                # Show level up choice after a short delay
+                self.root.after(1000, lambda: self.show_level_up_choice(level_up_message))
+            
+            return result
 
     def create_main_game_interface(self):
             """Create the main game interface"""
@@ -3759,7 +4003,7 @@ class FishingGame:
 
             # Location selection frame
             location_frame = tk.Frame(self.action_frame, bg="#87CEEB")
-            location_frame.pack(side=tk.LEFT, padx=20)
+            location_frame.pack(side=tk.LEFT, padx=18)
 
             location_label = tk.Label(location_frame, text="Location:", 
                                 font=("Helvetica", 12), bg="#87CEEB")
@@ -3779,37 +4023,43 @@ class FishingGame:
             self.fish_btn = tk.Button(self.action_frame, text="🎣 Go Fishing", 
                             font=("Helvetica", 14), bg="#2196F3", fg="white",
                             command=self.fishing_interface)
-            self.fish_btn.pack(side=tk.LEFT, padx=5)
+            self.fish_btn.pack(side=tk.LEFT, padx=3)
 
             # Sell items button
             self.sell_btn = tk.Button(self.action_frame, text="💰 Sell Items", 
                         font=("Helvetica", 14), bg="#4CAF50", fg="white",
                         command=self.open_sell_window)
-            self.sell_btn.pack(side=tk.LEFT, padx=5)
+            self.sell_btn.pack(side=tk.LEFT, padx=3)
 
             # Gear button
             self.gear_btn = tk.Button(self.action_frame, text="⚔️ Manage Gear", 
                         font=("Helvetica", 14), bg="#FF9800", fg="white",
                         command=self.open_gear_window)
-            self.gear_btn.pack(side=tk.LEFT, padx=5)
+            self.gear_btn.pack(side=tk.LEFT, padx=3)
 
             # Trade button
             self.trade_btn = tk.Button(self.action_frame, text="🎴 Trade", 
                     font=("Helvetica", 14), bg="#9C27B0", fg="white",
                     command=self.open_trade_window)
-            self.trade_btn.pack(side=tk.LEFT, padx=5)
+            self.trade_btn.pack(side=tk.LEFT, padx=3)
 
             # Items button (NEW)
             self.items_btn = tk.Button(self.action_frame, text="🧪 Use Items", 
-                    font=("Helvetica", 14), bg="#9C27B0", fg="white",
+                    font=("Helvetica", 14), bg="#607D8B", fg="white",
                     command=self.open_items_window)
-            self.items_btn.pack(side=tk.LEFT, padx=5) 
+            self.items_btn.pack(side=tk.LEFT, padx=3)
 
             # Eat Fish button (NEW)
             self.eat_fish_btn = tk.Button(self.action_frame, text="🍽️ Eat Fish", 
                     font=("Helvetica", 14), bg="#FF5722", fg="white",
                     command=self.open_eat_fish_window)
-            self.eat_fish_btn.pack(side=tk.LEFT, padx=5)
+            self.eat_fish_btn.pack(side=tk.LEFT, padx=3)
+
+            # Explore button (NEW)
+            self.explore_btn = tk.Button(self.action_frame, text="🗺️ Explore", 
+                    font=("Helvetica", 14), bg="#795548", fg="white",
+                    command=self.explore_interface)
+            self.explore_btn.pack(side=tk.LEFT, padx=3)
 
             # Game log
             self.log_frame = tk.Frame(self.game_frame, bg="#87CEEB")
@@ -3820,7 +4070,7 @@ class FishingGame:
             log_label.pack(anchor=tk.W)
 
             self.game_log = tk.Text(self.log_frame, font=("Helvetica", 11), 
-                            height=15, state=tk.DISABLED)
+                            height=12, state=tk.DISABLED)
             self.game_log.pack(fill=tk.BOTH, expand=True)
 
             # Welcome message
@@ -3975,22 +4225,57 @@ class FishingGame:
         quit_btn.pack(side=tk.LEFT, padx=10)
 
     def restart_game(self):
-            """Restart the entire game"""
-            if hasattr(self, 'game_over_window'):
-                self.game_over_window.destroy()
+        """Restart the entire game by restarting the Python process"""
+        import sys
+        import os
         
-            for window_attr in ['sell_window', 'inventory_window', 'gear_window']:
-                if hasattr(self, window_attr):
-                    window = getattr(self, window_attr)
-                    if window and window.winfo_exists():
-                        window.destroy()
+        # Close game over window
+        if hasattr(self, 'game_over_window') and self.game_over_window.winfo_exists():
+            self.game_over_window.destroy()
         
-            if hasattr(self, 'game_frame'):
-                self.game_frame.destroy()
+        # Show a brief restart message
+        restart_window = tk.Toplevel(self.root)
+        restart_window.title("Restarting...")
+        restart_window.geometry("300x100")
+        restart_window.configure(bg="#2C3E50")
+        restart_window.transient(self.root)
+        restart_window.grab_set()
         
-            self.player = None
+        restart_label = tk.Label(restart_window, text="🔄 Restarting game...", 
+                                font=("Helvetica", 14), bg="#2C3E50", fg="white")
+        restart_label.pack(expand=True)
         
-            self.create_widgets()
+        # Update the display
+        restart_window.update()
+        
+        # Give a brief moment for the message to be visible
+        self.root.after(500, self.execute_restart)
+
+    def execute_restart(self):
+        """Execute the actual restart"""
+        import sys
+        import os
+        import subprocess
+        
+        try:
+            # Get the current script path
+            current_script = os.path.abspath(__file__)
+            
+            # Close the current Tkinter window
+            self.root.quit()
+            self.root.destroy()
+            
+            # Start a new instance of the same script
+            subprocess.Popen([sys.executable, current_script])
+            
+            # Exit the current process
+            sys.exit(0)
+            
+        except Exception as e:
+            print(f"Error restarting: {e}")
+            # Fallback to the old restart method if something goes wrong
+            self.root.quit()
+
 
     def run(self):
             self.root.mainloop()
