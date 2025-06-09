@@ -31,7 +31,7 @@
       "unlock condition": "None"
     },
     {
-      "name": "Village Pond (Deep)",
+      "name": "Village Pond Depths",
       "description": "A deeper section of the village pond, home to larger fish",
       "fish types": ["Common", "Rare"],
       "item types": ["junk", "treasure", "consumable"],
@@ -43,7 +43,7 @@
       "catch nothing chance": 0.1,
       "fishing license required": false,
       "Unlocked by default": false,
-      "unlock condition": "Explore the village pond"
+      "unlock condition": "second_hermit_encounter"
     },
     {
       "name": "Ocean Shore",

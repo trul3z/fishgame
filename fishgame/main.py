@@ -246,7 +246,7 @@ class Player:
         self.max_energy = 100000
         self.level = 1
         self.xp = 0
-        self.xp_to_next_level = 10  # XP needed to level up
+        self.xp_to_next_level = 50  # XP needed to level up
         
         # Base stats (before equipment bonuses)
         self.base_luck = 10
@@ -552,6 +552,8 @@ class FishingGame:
         self.create_widgets()
         self.load_json_data()
 
+        self.player_completed_explorations = []
+
     def create_widgets(self):
         # Try to load and display image/gif
         try:
@@ -726,6 +728,22 @@ class FishingGame:
                 self.trade_data = json.load(f)
             print("✅ Trade data loaded successfully")
             
+            # FIXED: Add encoding='utf-8' to handle Unicode characters
+            try:
+                with open(os.path.join(base_dir, 'exploration.json'), 'r', encoding='utf-8') as f:
+                    self.exploration_data = json.load(f)
+                print("✅ Exploration data loaded successfully")
+            except FileNotFoundError:
+                print("⚠️ exploration.json not found - exploration events disabled")
+                self.exploration_data = {"explorations": {}}
+            except UnicodeDecodeError as e:
+                print(f"❌ Unicode error reading exploration.json: {e}")
+                print("💡 Try resaving exploration.json with UTF-8 encoding")
+                self.exploration_data = {"explorations": {}}
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode error in exploration.json: {e}")
+                self.exploration_data = {"explorations": {}}
+           
             print(f"Total loaded: {len(self.fish_data['fish'])} fish, {len(self.item_data['items'])} items, {len(self.gear_data['gear'])} gear, {len(self.enemy_data['enemies'])} enemies, {len(self.location_data['locations'])} locations, {len(self.trade_data['trade'])} trade options")
             
         except Exception as e:
@@ -734,7 +752,6 @@ class FishingGame:
             import traceback
             traceback.print_exc()
             
-            # Initialize empty data structures to prevent crashes
             self.fish_data = {'fish': []}
             self.item_data = {'items': []}
             self.gear_data = {'gear': []}
@@ -3554,6 +3571,9 @@ class FishingGame:
                 self.log_message("❌ Not enough energy to explore!")
                 return
 
+            # UPDATE PLAYER INFO IMMEDIATELY AFTER USING ENERGY
+            self.update_player_info()
+
             selected_location = self.location_var.get()
             
             # Initialize exploration counters if they don't exist
@@ -3576,16 +3596,254 @@ class FishingGame:
             # Check for newly unlocked locations after exploration
             self.check_and_unlock_locations()
 
-            if self.player.is_game_over():
+            # Check for game over AFTER updating UI
+            if self.player.health <= 0:
+                self.log_message("💀 GAME OVER! You have been defeated!")
+                self.root.after(1000, self.show_game_over_screen)
+                return
+            elif self.player.is_game_over():
                 self.log_message("💀 GAME OVER! You ran out of energy!")
                 self.root.after(1000, self.show_game_over_screen)
                 return
 
+            # Final update (in case anything changed during exploration)
             self.update_player_info()
 
         finally:
             if hasattr(self, 'explore_btn'):
                 self.root.after(500, lambda: self.explore_btn.config(state=tk.NORMAL))
+
+    def check_special_exploration_events(self, location_name):
+        """Check for special exploration events based on location and exploration count"""
+        if not hasattr(self, 'player') or self.player is None:
+            return False
+        
+        # Check if we have exploration data loaded
+        if not hasattr(self, 'exploration_data'):
+            print("⚠️ No exploration data loaded")
+            return False
+        
+        exploration_count = self.player.exploration_counts.get(location_name, 0)
+        
+        # Debug output
+        print(f"🔍 Checking exploration events for {location_name}, count: {exploration_count}")
+        
+        # Initialize completed explorations if not exists
+        if not hasattr(self.player, 'completed_explorations'):
+            self.player.completed_explorations = []
+        
+        # Check location-specific exploration events - FIXED to use correct structure
+        if location_name in self.exploration_data.get('explorations', {}):
+            location_explorations = self.exploration_data['explorations'][location_name]
+            
+            print(f"📝 Found {len(location_explorations)} exploration events for {location_name}")
+            
+            # Check each exploration event for this location
+            for exploration in location_explorations:
+                exploration_id = exploration.get('id', '')
+                
+                # Check if this exploration has already been completed and is not repeatable
+                if (exploration_id in self.player.completed_explorations and 
+                    not exploration.get('repeatable', False)):
+                    print(f"⏭️ Event {exploration_id} already completed")
+                    continue
+                
+                # Check requirements (like previous explorations)
+                if not self.check_exploration_requirements(exploration):
+                    continue
+                
+                # Trigger first hermit encounter on first exploration
+                if exploration_id == 'first_hermit_encounter' and exploration_count == 1:
+                    print(f"✨ Triggering first hermit encounter at {location_name}")
+                    self.show_exploration_dialogue(exploration)
+                    self.player.completed_explorations.append(exploration_id)
+                    return True
+                
+                # Trigger second hermit encounter on subsequent explorations (after first is completed)
+                elif (exploration_id == 'second_hermit_encounter' and 
+                    'first_hermit_encounter' in self.player.completed_explorations and
+                    exploration_count >= 2):  # Can trigger on 2nd+ exploration
+                    print(f"✨ Triggering second hermit encounter at {location_name}")
+                    self.show_exploration_dialogue(exploration)
+                    self.player.completed_explorations.append(exploration_id)
+                    # Handle the location unlock action
+                    self.handle_exploration_actions(exploration)
+                    return True
+        
+        print(f"❌ No matching exploration events found for {location_name}")
+        return False
+
+    def check_exploration_requirements(self, exploration):
+        """Check if exploration requirements are met"""
+        if 'requirements' not in exploration:
+            return True
+        
+        requirements = exploration['requirements']
+        
+        # Check completed explorations
+        if 'completed_explorations' in requirements:
+            required_explorations = requirements['completed_explorations']
+            for req_exploration in required_explorations:
+                if req_exploration not in self.player.completed_explorations:
+                    print(f"❌ Requirement not met: {req_exploration} not completed")
+                    return False
+        
+        return True
+
+    def trigger_exploration_event(self, event_name, event_data):
+        """Trigger a specific exploration event"""
+        event_type = event_data.get("type", "dialogue")
+        
+        if event_type == "dialogue":
+            self.show_dialogue_window(event_data)
+        # Add more event types here later if needed
+
+    def handle_exploration_actions(self, exploration):
+        """Handle actions from exploration events"""
+        if 'actions' not in exploration:
+            return
+        
+        actions = exploration['actions']
+        
+        # Handle location unlocking
+        if 'unlock_location' in actions:
+            location_name = actions['unlock_location']
+            
+            # Initialize unlocked locations if not exists
+            if not hasattr(self.player, 'unlocked_locations'):
+                self.player.unlocked_locations = []
+            
+            if location_name not in self.player.unlocked_locations:
+                self.player.unlocked_locations.append(location_name)
+                self.log_message(f"🗺️ New location unlocked: {location_name}")
+                
+                # Update the location dropdown immediately
+                self.update_location_dropdown()
+
+    def check_and_unlock_locations(self):
+        """Check if any new locations should be unlocked and update the dropdown"""
+        # This is called after exploration to check for any location unlocks
+        # The actual unlocking happens in handle_exploration_actions
+        self.update_location_dropdown()
+
+    def update_location_dropdown(self):
+        """Update the location dropdown with newly available locations"""
+        if not hasattr(self, 'location_dropdown'):
+            return
+        
+        # Get updated list of available locations
+        available_locations = self.get_available_locations()
+        
+        # Update the dropdown values
+        self.location_dropdown['values'] = available_locations
+        
+        # If current selection is not in the new list, reset to first available
+        current_location = self.location_var.get()
+        if current_location not in available_locations and available_locations:
+            self.location_var.set(available_locations[0])
+
+    def show_dialogue_window(self, event_data):
+        """Show a dialogue window with the given event data"""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        
+        # Create dialogue window
+        dialogue_window = tk.Toplevel(self.root)
+        dialogue_window.title(event_data.get("title", "Dialogue"))
+        dialogue_window.geometry("800x600")
+        dialogue_window.configure(bg="#2F4F2F")  # Dark forest green
+        dialogue_window.transient(self.root)
+        dialogue_window.grab_set()
+        dialogue_window.resizable(False, False)
+        
+        # Main container
+        main_frame = tk.Frame(dialogue_window, bg="#2F4F2F")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Title
+        title_label = tk.Label(main_frame, text=event_data.get("title", "Dialogue"), 
+                            font=("Helvetica", 20, "bold"), bg="#2F4F2F", fg="#FFD700")
+        title_label.pack(pady=(0, 20))
+        
+        # Description frame
+        if event_data.get("description"):
+            description_frame = tk.Frame(main_frame, bg="#556B2F", relief=tk.RAISED, bd=3)
+            description_frame.pack(fill=tk.X, pady=(0, 20))
+            
+            description_label = tk.Label(description_frame, text=event_data["description"], 
+                                        font=("Helvetica", 12), bg="#556B2F", fg="white",
+                                        wraplength=720, justify=tk.CENTER)
+            description_label.pack(padx=15, pady=15)
+        
+        # Dialogue frame with scrollbar
+        dialogue_frame = tk.Frame(main_frame, bg="#3C5F3C", relief=tk.SUNKEN, bd=2)
+        dialogue_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        
+        # Create scrollable text widget
+        canvas = tk.Canvas(dialogue_frame, bg="#3C5F3C")
+        scrollbar = tk.Scrollbar(dialogue_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="#3C5F3C")
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Add dialogue lines - FIXED to handle string format
+        dialogue_lines = event_data.get("dialogue", [])
+        for i, line in enumerate(dialogue_lines):
+            # Create frame for each dialogue line
+            line_frame = tk.Frame(scrollable_frame, bg="#3C5F3C")
+            line_frame.pack(fill=tk.X, padx=10, pady=5)
+            
+            # Handle string format (your current JSON structure)
+            dialogue_text = str(line)  # Simply convert to string
+            
+            dialogue_label = tk.Label(line_frame, text=dialogue_text, 
+                                    font=("Helvetica", 11), bg="#3C5F3C", fg="#F0E68C",
+                                    justify=tk.LEFT, anchor="w", wraplength=680)
+            dialogue_label.pack(fill=tk.X, pady=2)
+            
+            # Add spacing between dialogue sections
+            if i < len(dialogue_lines) - 1:
+                spacer = tk.Label(scrollable_frame, text="", bg="#3C5F3C", height=1)
+                spacer.pack()
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Close button
+        close_button = tk.Button(main_frame, text="✨ Continue Adventure", 
+                                font=("Helvetica", 14, "bold"), bg="#4169E1", fg="white",
+                                command=dialogue_window.destroy, width=20)
+        close_button.pack(pady=10)
+        
+        # Log the encounter
+        self.log_message(f"🗺️ Exploring: {event_data.get('title', 'Special encounter')}")
+
+    def show_exploration_dialogue(self, exploration):
+        """Show exploration dialogue window - uses existing show_dialogue_window"""
+        # Simply call the existing method with the exploration data
+        self.show_dialogue_window(exploration)
+
+    def regular_exploration(self, location_name):
+        """Handle regular exploration results when no special events occur"""
+        # Simple exploration results for now
+        exploration_results = [
+            "You discover a hidden fishing spot with clearer water.",
+            "You find some interesting stones along the shoreline.",
+            "You observe the local wildlife and learn about the ecosystem.",
+            "You practice your casting technique in a quiet corner.",
+            "You enjoy the peaceful atmosphere and feel refreshed.",
+            "You notice subtle changes in the water currents.",
+            "You find a comfortable spot to rest and plan your next moves."
+        ]
+        
+        import random
+        return random.choice(exploration_results)
 
     def update_player_info(self):
         """Modified to show XP and level"""
@@ -4079,17 +4337,26 @@ class FishingGame:
             self.log_message("=" * 50)
 
     def get_available_locations(self):
-            """Get list of locations available to the player"""
-            available = []
+        """Get list of locations available to the player"""
+        available = []
 
-            for loc_data in self.location_data['locations']:
-                location = Location(loc_data)
-                
-                # Check if location is unlocked
-                if location.is_unlocked(self.player.completed_trades if hasattr(self, 'player') and self.player else []):
+        for loc_data in self.location_data['locations']:
+            location = Location(loc_data)
+            
+            # Check if unlocked by default
+            if location.unlocked_by_default:
+                available.append(location.name)
+            else:
+                # Check if unlocked through exploration
+                if (hasattr(self, 'player') and self.player and 
+                    hasattr(self.player, 'unlocked_locations') and 
+                    location.name in self.player.unlocked_locations):
+                    available.append(location.name)
+                # Also check for trade-unlocked locations
+                elif location.is_unlocked(self.player.completed_trades if hasattr(self, 'player') and self.player else []):
                     available.append(location.name)
 
-            return available if available else ["Village Pond"]
+        return available if available else ["Village Pond"]
 
     def fishing_interface(self):
         """Handle fishing - costs 1 energy"""
@@ -4275,7 +4542,6 @@ class FishingGame:
             print(f"Error restarting: {e}")
             # Fallback to the old restart method if something goes wrong
             self.root.quit()
-
 
     def run(self):
             self.root.mainloop()
