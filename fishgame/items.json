@@ -1,0 +1,112 @@
+{
+  "items": [
+    {
+      "name": "Old Boot",
+      "rarity": 10,
+      "gold_value": 5,
+      "description": "Someone's lost boot. Smells terrible.",
+      "item_type": "junk",
+      "effect": "none",
+      "quantity": 2
+    },
+    {
+      "name": "Crusty Sock",
+      "rarity": 300,
+      "gold_value": 1,
+      "description": "A sock that has seen better days.",
+      "item_type": "junk",
+      "effect": "none",
+      "quantity": 3
+    },
+    {
+      "name": "Rusty Hook",
+      "rarity": 20,
+      "gold_value": 5,
+      "description": "An old fishing hook, still sharp.",
+      "item_type": "junk",
+      "effect": "none",
+      "quantity": 4
+    },
+    {
+      "name": "Treasure Chest",
+      "rarity": 800,
+      "gold_value": 150,
+      "description": "A waterlogged chest containing ancient coins!",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 5
+    },
+    {
+      "name": "Golden Fish Scale",
+      "rarity": 500,
+      "gold_value": 50,
+      "description": "A shimmering scale from a legendary fish.",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 3
+    },
+    {
+      "name": "Ancient Scroll",
+      "rarity": 500,
+      "gold_value": 100,
+      "description": "Contains forgotten fishing secrets.",
+      "item_type": "consumable",
+      "effect": "increase any skill by 3",
+      "quantity": 5
+    },
+    {
+      "name": "Bait",
+      "rarity": 75,
+      "gold_value": 10,
+      "description": "Novice bait.",
+      "item_type": "consumable",
+      "effect": "increased catch rate for the next 3 catches",
+      "quantity": 5
+    },
+    {
+      "name": "Master Bait",
+      "rarity": 300,
+      "gold_value": 50,
+      "description": "Expert bait for serious fishermen.",
+      "item_type": "consumable",
+      "effect": "increased catch rate for the next 10 catches",
+      "quantity": 2
+    },
+    {
+      "name": "Minor Stat Potion",
+      "rarity": 100,
+      "gold_value": 50,
+      "description": "A potion that slightly boosts one of your stats.",
+      "item_type": "consumable",
+      "effect": "increase any skill by 1",
+      "quantity": 10
+    },
+    {
+      "name": "Hasty Elixir",
+      "rarity": 200,
+      "gold_value": 75,
+      "description": "An elixir that boosts your speed.",
+      "item_type": "consumable",
+      "effect": "increase speed by 2",
+      "quantity": 3
+    },
+    {
+      "name": "Health Potion",
+      "rarity": 100,
+      "gold_value": 20,
+      "description": "Healing potion duh",
+      "item_type": "consumable",
+      "effect": "restore 5 health",
+      "quantity": 5
+    },
+    {
+      "name": "Mysterious Shell",
+      "rarity": 200,
+      "gold_value": 55,
+      "description": "A shell that hums with a strange energy.",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 10
+    }  
+  ]
+}
