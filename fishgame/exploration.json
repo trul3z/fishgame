@@ -42,6 +42,24 @@
         "requirements": {
           "completed_explorations": ["first_hermit_encounter"]
         }
+      },
+      {
+        "id": "third_hermit_encounter",
+        "title": "🧙‍♂️ The Hermit's Corpse",
+        "location": "Village Pond",
+        "description": "The Hermit's Body has sunken into the depths, maybe you should search for it?",
+        "dialogue": [
+          "A ring lays where the Hermit last sat, you should take it.",
+          "*Maybe I should try exploring the depths of the pond...*"
+        ],
+        "actions": {
+          "give_gear": "Dead Hermit's Ring"
+        },
+        "repeatable": false,
+        "weight": 1.0,
+        "requirements": {
+          "completed_explorations": ["second_hermit_encounter"]
+        }
       }
     ]
   }

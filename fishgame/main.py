@@ -262,6 +262,8 @@ class Player:
         self.inventory = []  
         self.gear_inventory = [] 
         self.completed_trades = []  
+        self.unlocked_locations = []  # Track unlocked locations by name
+        self.completed_explorations = []  # Track completed explorations by name
         
         # Equipment slots
         self.equipped_rod = None
@@ -275,6 +277,7 @@ class Player:
         self.equipped_knife = None
 
         self.bait_boost_remaining = 0 
+        self.exploration_counts = {}  # Track exploration counts for each type
 
     def take_damage(self, damage):
         """Take damage, used in combat"""
@@ -1303,7 +1306,7 @@ class FishingGame:
         # Penalties for losing - but only if not completely dead
         gold_lost = min(self.player.gold, self.player.gold // 4)  # Lose 25% of gold
         self.player.gold -= gold_lost
-        
+        self.player.add_xp(-self.current_enemy.xp_reward // 2)  # Lose half XP
         self.add_combat_log(f"💸 You lost {gold_lost} gold.")
         self.add_combat_log(f"💀 Your adventure ends here...")
         
@@ -1636,19 +1639,6 @@ class FishingGame:
         self.trade_window.destroy()
         messagebox.showinfo("Trade Complete", f"Successfully traded for '{trade.name}'!\n\n{result}")
 
-    def update_location_dropdown(self):
-        """Update the location dropdown with newly unlocked locations"""
-        if hasattr(self, 'location_dropdown'):
-            # Get updated available locations
-            available_locations = self.get_available_locations()
-            
-            # Update dropdown values
-            self.location_dropdown['values'] = available_locations
-            
-            # If current selection is not in new list, set to first available
-            current_location = self.location_var.get()
-            if current_location not in available_locations and available_locations:
-                self.location_var.set(available_locations[0])
 
     def start_game(self):
         """Start character creation process"""
@@ -1700,7 +1690,7 @@ class FishingGame:
             "Bass", "Finn", "Rod", "Reel", "Anchor", "Tide", "Storm", "Wave", "Current",
             "Depth", "Coral", "Pearl", "Shell", "Drift", "Harbor", "Bay", "Coast",
             "Reef", "Marlin", "Tuna", "Cod", "Salmon", "Trout", "Carp", "Minnow",
-            "Whale", "Shark", "Ray", "Eel", "Crab", "Lobster", "Shrimp", "Kelp","Cthulu","Stinky","Big","Fishy","Bubbles","Splash","Gills","Finley","Hook","Reelina","Tidal","Nautical","Muhammad","Jesus","Lil"
+            "Whale", "Shark", "Ray", "Eel", "Crab", "Lobster", "Shrimp", "Kelp","Cthulu","Stinky","Big","Fishy","Bubbles","Splash","Gills","Finley","Hook","Reelina","Tidal","Nautical","Muhammad","Jesus","Lil", "Truck", "Big Back", "Ford", "Tyler", "Bubba", "Koda", "Marco", "Duke", "Splash", "Gilligan", "Dick", "Philly"
         ]
         
         last_names = [
@@ -1709,7 +1699,7 @@ class FishingGame:
             "Tidewatcher", "Stormrider", "Wavebreaker", "Deepdiver", "Surfcaster",
             "Linecaster", "Rodmaster", "Baitlord", "Catchall", "Bigfish", "Longline",
             "Sinker", "Floater", "Dragnetter", "Spearman", "Harpoon", "Tackle",
-            "Lighthouse", "Portside", "Starboard", "Windward", "Leeward", "Offshore","Cthulu","Jackson","Texas", "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Martinez", "Davis", "Rodriguez", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Perez"
+            "Lighthouse", "Portside", "Starboard", "Windward", "Leeward", "Offshore","Cthulu","Jackson","Texas", "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Martinez", "Davis", "Rodriguez", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Perez", "Big Back", "Buster", "Military", "Taylor", "Chimichanga"
         ]
         
         random_first = random.choice(first_names)
@@ -3613,6 +3603,65 @@ class FishingGame:
             if hasattr(self, 'explore_btn'):
                 self.root.after(500, lambda: self.explore_btn.config(state=tk.NORMAL))
 
+    def check_exploration_requirements(self, event):
+        """Check if player meets requirements for an exploration event"""
+        if not hasattr(self, 'player') or self.player is None:
+            return False
+        
+        # Check if event has requirements
+        requirements = event.get('requirements', {})
+        if not requirements:
+            return True  # No requirements means always available
+        
+        # Check level requirement
+        if 'min_level' in requirements:
+            if self.player.level < requirements['min_level']:
+                return False
+        
+        # Check exploration count requirement
+        if 'min_explorations' in requirements:
+            location_name = event.get('location', '')
+            exploration_count = self.player.exploration_counts.get(location_name, 0)
+            if exploration_count < requirements['min_explorations']:
+                return False
+        
+        # FIXED: Check completed explorations requirement
+        if 'completed_explorations' in requirements:
+            required_explorations = requirements['completed_explorations']
+            if not hasattr(self.player, 'completed_explorations'):
+                self.player.completed_explorations = []
+            
+            # Check if ALL required explorations have been completed
+            for required_exploration in required_explorations:
+                if required_exploration not in self.player.completed_explorations:
+                    return False  # Required exploration not completed yet
+        
+        # Check completed trades requirement
+        if 'required_trades' in requirements:
+            required_trades = requirements['required_trades']
+            if not hasattr(self.player, 'completed_trades'):
+                self.player.completed_trades = []
+            
+            for trade_name in required_trades:
+                if trade_name not in self.player.completed_trades:
+                    return False
+        
+        # Check gold requirement
+        if 'min_gold' in requirements:
+            if self.player.gold < requirements['min_gold']:
+                return False
+        
+        # Check stats requirements
+        if 'min_stats' in requirements:
+            player_stats = self.player.get_total_stats()
+            min_stats = requirements['min_stats']
+            
+            for stat_name, min_value in min_stats.items():
+                if player_stats.get(stat_name, 0) < min_value:
+                    return False
+        
+        return True
+
     def check_special_exploration_events(self, location_name):
         """Check for special exploration events based on location and exploration count"""
         if not hasattr(self, 'player') or self.player is None:
@@ -3620,75 +3669,50 @@ class FishingGame:
         
         # Check if we have exploration data loaded
         if not hasattr(self, 'exploration_data'):
-            print("⚠️ No exploration data loaded")
             return False
         
         exploration_count = self.player.exploration_counts.get(location_name, 0)
-        
-        # Debug output
-        print(f"🔍 Checking exploration events for {location_name}, count: {exploration_count}")
         
         # Initialize completed explorations if not exists
         if not hasattr(self.player, 'completed_explorations'):
             self.player.completed_explorations = []
         
-        # Check location-specific exploration events - FIXED to use correct structure
+        # Check location-specific exploration events
         if location_name in self.exploration_data.get('explorations', {}):
-            location_explorations = self.exploration_data['explorations'][location_name]
+            available_events = self.exploration_data['explorations'][location_name]
             
-            print(f"📝 Found {len(location_explorations)} exploration events for {location_name}")
+            # Filter events that haven't been completed and meet requirements
+            eligible_events = []
+            for event in available_events:
+                # SAFETY CHECK: Skip events without IDs
+                if 'id' not in event:
+                    print(f"⚠️ Skipping event without ID: {event}")
+                    continue
+                    
+                if event['id'] not in self.player.completed_explorations:
+                    if self.check_exploration_requirements(event):
+                        eligible_events.append(event)
             
-            # Check each exploration event for this location
-            for exploration in location_explorations:
-                exploration_id = exploration.get('id', '')
+            if eligible_events:
+                # Use weighted random selection based on event weights
+                weights = [event.get('weight', 1.0) for event in eligible_events]
+                selected_event = random.choices(eligible_events, weights=weights)[0]
                 
-                # Check if this exploration has already been completed and is not repeatable
-                if (exploration_id in self.player.completed_explorations and 
-                    not exploration.get('repeatable', False)):
-                    print(f"⏭️ Event {exploration_id} already completed")
-                    continue
+                print(f"🎯 Selected event: {selected_event['id']}")
                 
-                # Check requirements (like previous explorations)
-                if not self.check_exploration_requirements(exploration):
-                    continue
+                # Mark as completed if not repeatable
+                if not selected_event.get('repeatable', False):
+                    self.player.completed_explorations.append(selected_event['id'])
                 
-                # Trigger first hermit encounter on first exploration
-                if exploration_id == 'first_hermit_encounter' and exploration_count == 1:
-                    print(f"✨ Triggering first hermit encounter at {location_name}")
-                    self.show_exploration_dialogue(exploration)
-                    self.player.completed_explorations.append(exploration_id)
-                    return True
+                # Show the exploration event
+                self.show_exploration_dialogue(selected_event)
                 
-                # Trigger second hermit encounter on subsequent explorations (after first is completed)
-                elif (exploration_id == 'second_hermit_encounter' and 
-                    'first_hermit_encounter' in self.player.completed_explorations and
-                    exploration_count >= 2):  # Can trigger on 2nd+ exploration
-                    print(f"✨ Triggering second hermit encounter at {location_name}")
-                    self.show_exploration_dialogue(exploration)
-                    self.player.completed_explorations.append(exploration_id)
-                    # Handle the location unlock action
-                    self.handle_exploration_actions(exploration)
-                    return True
+                # Handle actions for ALL events
+                self.handle_exploration_actions(selected_event)
+                
+                return True
         
-        print(f"❌ No matching exploration events found for {location_name}")
         return False
-
-    def check_exploration_requirements(self, exploration):
-        """Check if exploration requirements are met"""
-        if 'requirements' not in exploration:
-            return True
-        
-        requirements = exploration['requirements']
-        
-        # Check completed explorations
-        if 'completed_explorations' in requirements:
-            required_explorations = requirements['completed_explorations']
-            for req_exploration in required_explorations:
-                if req_exploration not in self.player.completed_explorations:
-                    print(f"❌ Requirement not met: {req_exploration} not completed")
-                    return False
-        
-        return True
 
     def trigger_exploration_event(self, event_name, event_data):
         """Trigger a specific exploration event"""
@@ -3719,6 +3743,18 @@ class FishingGame:
                 
                 # Update the location dropdown immediately
                 self.update_location_dropdown()
+
+        if 'give_gear' in actions:
+            gear_name = actions['give_gear']
+            # Find gear in gear.json
+            for gear_data in self.gear_data['gear']:
+                if gear_data['name'] == gear_name:
+                    gear_item = Gear(gear_data)
+                    self.player.add_gear(gear_item)
+                    self.log_message(f"🎁 You received: {gear_name}!")
+                    break
+            else:
+                self.log_message(f"⚠️ Error: Gear '{gear_name}' not found!")
 
     def check_and_unlock_locations(self):
         """Check if any new locations should be unlocked and update the dropdown"""

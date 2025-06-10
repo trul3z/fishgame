@@ -206,6 +206,17 @@
         "attack": 1,
         "speed": 2
       }
+    },
+    {
+      "name": "Dead Hermit's Ring",
+      "gear_type": "ring",
+      "gold_value": 1000,
+      "rarity": -1,
+      "description": "A ring that belonged to a long-dead hermit, it doesnt seem to do anything special.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 0
+      }
     }
-]
+  ]
 }
