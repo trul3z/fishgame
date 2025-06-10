@@ -275,6 +275,162 @@
       "food_value": 50,
       "description": "A massive cephalopod with long tentacles, feared by sailors",
       "fish_effect": "+2 attack when held"
+    },
+    {
+      "name": "Bluefish",
+      "rarity": 300,
+      "type": "Rare",
+      "min_size": 5,
+      "max_size": 10,
+      "avg_size": 7,
+      "gold_value": 80,
+      "food_value": 3,
+      "description": "A fast-swimming fish with a sleek blue body, known for its aggressive behavior",
+      "fish_effect": "+1 speed when held"
+    },
+    {
+      "name": "Silverfin",
+      "rarity": 400,
+      "type": "Rare",
+      "min_size": 6,
+      "max_size": 12,
+      "avg_size": 9,
+      "gold_value": 120,
+      "food_value": 4,
+      "description": "A shimmering fish with silver scales, prized for its beauty",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Lava Eel",
+      "rarity": 800,
+      "type": "Volcanic",
+      "min_size": 10,
+      "max_size": 15,
+      "avg_size": 12,
+      "gold_value": 300,
+      "food_value": 8,
+      "description": "A fiery eel that thrives in volcanic waters, its scales glowing with heat",
+      "fish_effect": "+1 attack when held"
+    },
+    {
+      "name": "Freshwater Stingray",
+      "rarity": 300,
+      "type": "Rare",
+      "min_size": 2,
+      "max_size": 5,
+      "avg_size": 3.5,
+      "gold_value": 70,
+      "food_value": 2,
+      "description": "A flat-bodied fish with a long tail and a venomous barb, found in freshwater lakes",
+      "fish_effect": "+1 defense when held"
+    },
+    {
+      "name": "Moonfish",
+      "rarity": 600,
+      "type": "Rare",
+      "min_size": 3,
+      "max_size": 6,
+      "avg_size": 4.5,
+      "gold_value": 150,
+      "food_value": 5,
+      "description": "A mystical fish that glows softly in the moonlight, said to bring good luck",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Phoenician Fish",
+      "rarity": 950,
+      "type": "Rare",
+      "min_size": 5,
+      "max_size": 10,
+      "avg_size": 7.5,
+      "gold_value": 220,
+      "food_value": 2,
+      "description": "A legendary fish with vibrant colors, said to be a symbol of rebirth and renewal",
+      "fish_effect": "+1 luck when held"
+    },
+    {
+      "name": "Largemouth Bass",
+      "rarity": 150,
+      "type": "Lake",
+      "min_size": 10,
+      "max_size": 20, 
+      "avg_size": 15,
+      "gold_value": 60,
+      "food_value": 3,
+      "description": "A popular game fish known for its large mouth and aggressive behavior",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Lake Perch",
+      "rarity": 200,
+      "type": "Lake",
+      "min_size": 5,
+      "max_size": 10,
+      "avg_size": 7.5,
+      "gold_value": 40,
+      "food_value": 2,
+      "description": "A small, spiny fish found in freshwater lakes, known for its tasty flesh",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Gigantic Goldfish",
+      "rarity": 900,
+      "type": "Rare",
+      "min_size": 20,
+      "max_size": 30,
+      "avg_size": 25,
+      "gold_value": 100,
+      "food_value": 12,
+      "description": "A massive goldfish that has grown to an enormous size, often found in large ponds",
+      "fish_effect": "+1 luck when held"
+    },
+    {
+      "name": "Lake Pike",
+      "rarity": 400,
+      "type": "Lake",
+      "min_size": 15,
+      "max_size": 25,
+      "avg_size": 20,
+      "gold_value": 80,
+      "food_value": 5,
+      "description": "A large, predatory fish with sharp teeth, known for its aggressive behavior",
+      "fish_effect": "+1 attack when held"
+    },
+    {
+      "name": "Lake Trout",
+      "rarity": 300,
+      "type": "Lake",
+      "min_size": 10,
+      "max_size": 20,
+      "avg_size": 15,
+      "gold_value": 70,
+      "food_value": 3,
+      "description": "A cold-water fish known for its delicious taste and beautiful coloration",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Muskellunge",
+      "rarity": 999,
+      "type": "Lake",
+      "min_size": 30,
+      "max_size": 50,
+      "avg_size": 40,
+      "gold_value": 1000,
+      "food_value": 20,
+      "description": "A legendary fish known for its size and ferocity, often sought after by anglers",
+      "fish_effect": "+2 attack when held"
+    },
+    {
+      "name": "Crappie",
+      "rarity": 60,
+      "type": "Lake",
+      "min_size": 4,
+      "max_size": 8,
+      "avg_size": 6,
+      "gold_value": 25,
+      "food_value": 2,
+      "description": "A small, panfish known for its tasty flesh and speckled appearance",
+      "fish_effect": "none"
     }
-  ]
+    ]
 }

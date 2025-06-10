@@ -4,7 +4,6 @@
       {
         "id": "first_hermit_encounter",
         "title": "🧙‍♂️ Mysterious Hermit",
-        "location": "Village Pond",
         "description": "As you explore the quiet shores of Village Pond, you notice a figure sitting by an old willow tree. An elderly hermit with a long, weathered beard looks up from his fishing rod and greets you with knowing eyes.",
         "dialogue": [
           "🧙‍♂️ Hermit: \"Ah, another soul drawn to these peaceful waters...\"",
@@ -16,12 +15,11 @@
         ],
         "actions": {},
         "repeatable": false,
-        "weight": 1.0
+        "requirements": null
       },
       {
         "id": "second_hermit_encounter",
         "title": "🧙‍♂️ The Hermit's Deeper Wisdom",
-        "location": "Village Pond",
         "description": "The familiar hermit notices your return and your growing skill. His eyes gleam with ancient knowledge as he gestures toward the center of the pond.",
         "dialogue": [
           "🧙‍♂️ Hermit: \"Ah, you've returned! I can see the waters have been kind to you...\"",
@@ -38,7 +36,6 @@
           "unlock_location": "Village Pond Depths"
         },
         "repeatable": false,
-        "weight": 1.0,
         "requirements": {
           "completed_explorations": ["first_hermit_encounter"]
         }
@@ -46,19 +43,53 @@
       {
         "id": "third_hermit_encounter",
         "title": "🧙‍♂️ The Hermit's Corpse",
-        "location": "Village Pond",
         "description": "The Hermit's Body has sunken into the depths, maybe you should search for it?",
         "dialogue": [
           "A ring lays where the Hermit last sat, you should take it.",
           "*Maybe I should try exploring the depths of the pond...*"
         ],
         "actions": {
-          "give_gear": "Dead Hermit's Ring"
+          "add_gear": "Dead Hermit's Ring"
         },
         "repeatable": false,
-        "weight": 1.0,
         "requirements": {
-          "completed_explorations": ["second_hermit_encounter"]
+          "completed_explorations": ["first_hermit_encounter", "second_hermit_encounter"]
+        }
+      }
+    ],
+    "Village Well": [
+      {
+        "id": "exploring_the_well",
+        "title": "🪣 Exploring the Well",
+        "description": "You sit in an abandoned village, this well seems like a good place to start exploring. You peer down into the dark depths of the well, the water is murky and you can't see much.",
+        "dialogue": [
+          "This village has been abandoned for years, but the well seems to be stirring with life.",
+          "You seek to understand why you have such a strong urge to continue fishing."
+        ],
+        "actions": {},
+        "repeatable": false,
+        "requirements": null
+      },
+      {
+        "id": "digging_near_the_well",
+        "title": "🪓 Digging Near the Well",
+        "description": "You notice a small patch of disturbed earth near the well. It looks like someone has been digging here recently.",
+        "dialogue": [
+          "You start digging and uncover a chest full of treasure.",
+          "Inside the chest, you find some old coins and a map to a secret fishing spot near the outskirts of the village."
+        ],
+        "actions": {
+          "add_item": [
+            {
+              "name": "Treasure Chest",
+              "quantity": 1
+            }  
+          ],
+          "unlock_location": "Village Secret Cove"
+        },
+        "repeatable": false,
+        "requirements": {
+          "completed_explorations": ["exploring_the_well"]
         }
       }
     ]

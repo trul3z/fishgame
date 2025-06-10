@@ -39,8 +39,8 @@
     {
       "name": "Golden Fish Scale",
       "rarity": 500,
-      "gold_value": 50,
-      "description": "A shimmering scale from a legendary fish.",
+      "gold_value": 500,
+      "description": "A shimmering scale worth a good chunk of change.",
       "item_type": "treasure",
       "effect": "none",
       "quantity": 3
@@ -73,9 +73,9 @@
       "quantity": 2
     },
     {
-      "name": "Minor Stat Potion",
+      "name": "Potion of Minor Improvement",
       "rarity": 100,
-      "gold_value": 50,
+      "gold_value": 100,
       "description": "A potion that slightly boosts one of your stats.",
       "item_type": "consumable",
       "effect": "increase any skill by 1",
@@ -100,13 +100,40 @@
       "quantity": 5
     },
     {
-      "name": "Mysterious Shell",
+      "name": "Pretty Shell",
       "rarity": 200,
-      "gold_value": 55,
-      "description": "A shell that hums with a strange energy.",
+      "gold_value": 60,
+      "description": "Might be worth some gold.",
       "item_type": "treasure",
       "effect": "none",
       "quantity": 10
+    },
+    {
+      "name": "Strenght Elixir",
+      "rarity": 300,
+      "gold_value": 100,
+      "description": "An elixir that boosts your strength.",
+      "item_type": "consumable",
+      "effect": "increase attack by 2",
+      "quantity": 7
+    },
+    {
+      "name": "Defense Elixir",
+      "rarity": 300,
+      "gold_value": 100,
+      "description": "An elixir that boosts your defense.",
+      "item_type": "consumable",
+      "effect": "increase defense by 2",
+      "quantity": 7
+    },
+    {
+      "name": "Strange Fish Scale",
+      "rarity": 400,
+      "gold_value": 85,
+      "description": "A scale from a fish that doesn't look like any you've seen before.",
+      "item_type": "treasure",
+      "effect": "none",
+      "quantity": 4
     }  
   ]
 }

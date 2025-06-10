@@ -155,7 +155,45 @@
       "loot_value": 150,
       "xp_reward": 75,
       "enemy_type": "undead"
+    },
+    {
+      "name": "Sea Serpent",
+      "rarity": 600,
+      "health": 80,
+      "attack": 25,
+      "defense": 15,
+      "speed": 12,
+      "description": "A legendary sea creature that lurks in the depths.",
+      "attack_message": "The sea serpent lashes out with its tail!",
+      "loot_value": 400,
+      "xp_reward": 300,
+      "enemy_type": "rare"
+    },
+    {
+      "name": "Water Elemental",
+      "rarity": 750,
+      "health": 60,
+      "attack": 20,
+      "defense": 15,
+      "speed": 10,
+      "description": "A creature made of water, it can manipulate the tides.",
+      "attack_message": "The water elemental splashes you with a wave!",
+      "loot_value": 300,
+      "xp_reward": 200,
+      "enemy_type": "rare"
+    },
+    {
+      "name": "Golem",
+      "rarity": 850,
+      "health": 120,
+      "attack": 35,
+      "defense": 30,
+      "speed": 5,
+      "description": "A massive stone creature that guards ancient secrets.",
+      "attack_message": "The golem slams its fist down!",
+      "loot_value": 600,
+      "xp_reward": 500,
+      "enemy_type": "rare"
     }
-
   ]
 }

@@ -547,7 +547,7 @@ class Player:
 class FishingGame:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Tyler's Fishing Game")
+        self.root.title("Tyler and Koda's Fishing Game")
         self.root.geometry("1260x720")  
         self.root.resizable(True, True)
         self.root.configure(bg="#87CEEB")
@@ -3694,9 +3694,7 @@ class FishingGame:
                         eligible_events.append(event)
             
             if eligible_events:
-                # Use weighted random selection based on event weights
-                weights = [event.get('weight', 1.0) for event in eligible_events]
-                selected_event = random.choices(eligible_events, weights=weights)[0]
+                selected_event = eligible_events[0]
                 
                 print(f"🎯 Selected event: {selected_event['id']}")
                 
@@ -3723,11 +3721,15 @@ class FishingGame:
         # Add more event types here later if needed
 
     def handle_exploration_actions(self, exploration):
-        """Handle actions from exploration events"""
+        """Handle actions from exploration events - standardized to use 'add_' format"""
+        print(f"🔍 DEBUG: handle_exploration_actions called with: {exploration}")
+        
         if 'actions' not in exploration:
+            print("❌ DEBUG: No actions found in exploration")
             return
         
         actions = exploration['actions']
+        print(f"🔍 DEBUG: Found actions: {actions}")
         
         # Handle location unlocking
         if 'unlock_location' in actions:
@@ -3744,8 +3746,10 @@ class FishingGame:
                 # Update the location dropdown immediately
                 self.update_location_dropdown()
 
-        if 'give_gear' in actions:
-            gear_name = actions['give_gear']
+        # Handle adding gear (standardized name)
+        if 'add_gear' in actions:
+            gear_name = actions['add_gear']
+            print(f"🎁 DEBUG: Trying to add gear: {gear_name}")
             # Find gear in gear.json
             for gear_data in self.gear_data['gear']:
                 if gear_data['name'] == gear_name:
@@ -3755,6 +3759,60 @@ class FishingGame:
                     break
             else:
                 self.log_message(f"⚠️ Error: Gear '{gear_name}' not found!")
+
+        # Handle adding items (standardized name) - using same logic as Trade class
+        if 'add_item' in actions:
+            items_to_add = actions['add_item']
+            print(f"🎁 DEBUG: Trying to add items: {items_to_add}")
+            print(f"🗂️ DEBUG: Available items in JSON: {[item.get('name', 'NO_NAME') for item in self.item_data['items']]}")
+            
+            # Handle both single item and list of items
+            if isinstance(items_to_add, list):
+                for item_entry in items_to_add:
+                    item_name = item_entry.get('name', '')
+                    quantity = item_entry.get('quantity', 1)
+                    print(f"🔍 DEBUG: Looking for item: '{item_name}' (quantity: {quantity})")
+                    
+                    # Give the specified quantity using Trade class logic
+                    for _ in range(quantity):
+                        # Find item in items.json
+                        item_found = False
+                        for item_data in self.item_data['items']:
+                            if item_data['name'] == item_name:
+                                item = Item(item_data)
+                                self.player.add_item(item)
+                                item_found = True
+                                break
+                        
+                        if not item_found:
+                            print(f"❌ DEBUG: Item '{item_name}' not found!")
+                            self.log_message(f"⚠️ Error: Item '{item_name}' not found in items.json!")
+                            break
+                    
+                    if item_found:
+                        if quantity == 1:
+                            self.log_message(f"🎁 You received: {item_name}!")
+                        else:
+                            self.log_message(f"🎁 You received: {quantity}x {item_name}!")
+            else:
+                # Handle single item (legacy support)
+                item_name = items_to_add
+                print(f"🔍 DEBUG: Looking for single item: '{item_name}'")
+                # Use Trade class logic for single items
+                for item_data in self.item_data['items']:
+                    if item_data['name'] == item_name:
+                        item = Item(item_data)
+                        self.player.add_item(item)
+                        self.log_message(f"🎁 You received: {item_name}!")
+                        break
+                else:
+                    print(f"❌ DEBUG: Single item '{item_name}' not found!")
+                    self.log_message(f"⚠️ Error: Item '{item_name}' not found in items.json!")
+        
+        print("🔄 DEBUG: Updating player info...")
+        # Update inventory display after adding items
+        self.update_player_info()
+        print("✅ DEBUG: Player info updated")
 
     def check_and_unlock_locations(self):
         """Check if any new locations should be unlocked and update the dropdown"""

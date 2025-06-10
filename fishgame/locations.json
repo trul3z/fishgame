@@ -46,9 +46,24 @@
       "unlock condition": "second_hermit_encounter"
     },
     {
+      "name": "Village Secret Cove",
+      "description": "A hidden cove near the village, known for its rare fish",
+      "fish types": ["Rare", "Lake"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["Common", "Rare"],
+      "fish spawn chance": 0.4,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.1,
+      "enemy spawn chance": 0.2,
+      "catch nothing chance": 0.1,
+      "fishing license required": false,
+      "Unlocked by default": false,
+      "unlock condition": "digging_near_the_well"
+    },
+    {
       "name": "Ocean Shore",
       "description": "A sandy beach where the ocean meets the land, teeming with life",
-      "fish types": ["Rare", "Ocean", "Shore"],
+      "fish types": ["Rare", "Ocean Shore"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["Common", "Ocean", "Undead"],
       "fish spawn chance": 0.5,
@@ -60,6 +75,21 @@
       "Unlocked by default": false,
       "unlock condition": "Trade deck"
     },
+    {
+      "name": "Coral Reef",
+      "description": "A vibrant coral reef filled with colorful fish and hidden treasures",
+      "fish types": ["Ocean Shore", "Reef"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["Common", "Reef"],
+      "fish spawn chance": 0.4,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.1,
+      "enemy spawn chance": 0.2,
+      "catch nothing chance": 0.1,
+      "fishing license required": false,
+      "Unlocked by default": false,
+      "unlock condition": "Trade deck"
+    }, 
     {
       "name": "Abyssal Trench",
       "description": "A deep underwater trench filled with mysterious and powerful creatures",
