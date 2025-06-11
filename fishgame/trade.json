@@ -6,9 +6,22 @@
       "effect": "Get a new rod",
       "gold_value": 150,
       "quantity": 1,
+      "level_requirement": 1,
       "trigger": {
         "action": "add_gear",
         "target": "Sturdy Rod"
+      }
+    },
+    {
+      "name": "Fishing License",
+      "type": "license",
+      "effect": "Allows fishing in new locations",
+      "gold_value": 250,
+      "quantity": 1,
+      "level_requirement": 1,
+      "trigger": {
+        "action": "unlock_license",
+        "target": "fishing_license"
       }
     },
     {
@@ -17,6 +30,7 @@
       "effect": "Unlock a random new fishing location",
       "gold_value": 200,
       "quantity": 20,
+      "level_requirement": 2,
       "trigger": {
         "action": "unlock_location",
         "target": "trade_deck_locations"
@@ -28,6 +42,7 @@
       "effect": "Restores health",
       "gold_value": 50,
       "quantity": 5,
+      "level_requirement": 1,
       "trigger": {
         "action": "add_item",
         "target": "Health Potion"
@@ -39,6 +54,7 @@
       "effect": "Get a lucky necklace",
       "gold_value": 100,
       "quantity": 1,
+      "level_requirement": 3,
       "trigger": {
         "action": "add_gear",
         "target": "Lucky Necklace"
@@ -50,21 +66,23 @@
       "effect": "Permanently increases luck",
       "gold_value": 300,
       "quantity": 10,
+      "level_requirement": 3,
       "trigger": {
         "action": "increase_stat",
         "target": "luck",
-        "amount": 5
+        "amount": 3
       }
     },
     {
-      "name": "Bait Bundle",
+      "name": "Buy Bait",
       "type": "item",
       "effect": "Get a bundle of bait",
       "gold_value": 75,
       "quantity": 10,
+      "level_requirement": 1,
       "trigger": {
         "action": "add_item",
-        "target": "Bait Bundle"
+        "target": "Bait"
       }
     },
     {
@@ -73,6 +91,7 @@
       "effect": "Permanently increases multiple stats",
       "gold_value": 500,
       "quantity": 5,
+      "level_requirement": 4,
       "trigger": [
         {
           "action": "increase_stat",
@@ -95,6 +114,19 @@
           "amount": 3
         }
       ]
+    },
+    {
+      "name": "Shady Dealer",
+      "type": "item",
+      "effect": "Get a sample from your dealer",
+      "gold_value": 200,
+      "quantity": 1,
+      "level_requirement": 1,
+      "trigger": {
+        "action": "add_item",
+        "target": "Cocaine"
+      }
     }
+
   ]
 }

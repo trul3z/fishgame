@@ -92,6 +92,63 @@
           "completed_explorations": ["exploring_the_well"]
         }
       }
+    ],
+    "Ocean Shore": [
+      {
+        "id": "exploring_the_shore",
+        "title": "Guided by the Ring,",
+        "description": "Unlock Lighthouse Pier if player has Dead Hermit's Ring equipped.",
+        "dialogue": [
+          "You feel a strange pull towards the distant lighthouse, as if the ring is guiding you.",
+          "The waves crash against the rocks, and you can see a pier in the distance.",
+          "You decide to follow the ring's guidance and head towards the lighthouse pier."
+        ],
+        "actions": {
+          "unlock_location": "Lighthouse Pier"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_gear": "Dead Hermit's Ring"
+        }
+      }
+    ],
+    "Lighthouse Pier": [
+      {
+        "id": "lighthouse_pier_encounter",
+        "title": "🗼 Lighthouse Pier Encounter",
+        "description": "You approach the lighthouse door and it is locked, the Dead Hermit's Ring, begins pulling you towards the water.",
+        "dialogue": [
+          "You approach the door to the lighthouse, but it is locked tight,",
+          "The Dead Hermit's Ring begins to glow and pull you towards the water.",
+          "It seems like the ring wants you to keep fishing, even though you wanted to enter the lighthouse."
+        ],
+        "actions": {},
+        "repeatable": false,
+        "requirements": {
+          "has_gear": "Dead Hermit's Ring",
+          "does_not_have_gear": "Lighthouse Key"
+        }
+      },
+      {
+        "id": "open_lighthouse_door",
+        "title": "🗝️ Opening the Lighthouse Door",
+        "description": "You use the key you caught earlier to unlock the lighthouse door.",
+        "dialogue": [
+          "You take out the Lighthouse Key and insert it into the lock.",
+          "With a satisfying click, the door swings open, revealing the interior of the lighthouse.",
+          "You step inside.",
+          "You notice in one corner a fishing hole, it seems like the Dead Hermit used to fish here.",
+          "You spot a tunic on the floor, it the ring feels war as you pick it up."
+        ],
+        "actions": {
+          "add_gear": "Dead Hermit's Tunic",
+          "unlock_location": "Lighthouse Interior"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_gear": "Lighthouse Key"
+        }
+    }    
     ]
   }
-}
+  }    

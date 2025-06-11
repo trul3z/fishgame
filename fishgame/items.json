@@ -73,8 +73,17 @@
       "quantity": 2
     },
     {
+      "name": "Cocaine",
+      "rarity": 750,
+      "gold_value": 200,
+      "description": "Gives you a rush of energy.",
+      "item_type": "consumable",
+      "effect": "restore 3 energy",
+      "quantity": 7
+    },
+    {
       "name": "Potion of Minor Improvement",
-      "rarity": 100,
+      "rarity": 800,
       "gold_value": 100,
       "description": "A potion that slightly boosts one of your stats.",
       "item_type": "consumable",
@@ -87,7 +96,7 @@
       "gold_value": 75,
       "description": "An elixir that boosts your speed.",
       "item_type": "consumable",
-      "effect": "increase speed by 2",
+      "effect": "increase speed by 1",
       "quantity": 3
     },
     {
@@ -109,12 +118,12 @@
       "quantity": 10
     },
     {
-      "name": "Strenght Elixir",
+      "name": "Strenk Elixir",
       "rarity": 300,
       "gold_value": 100,
       "description": "An elixir that boosts your strength.",
       "item_type": "consumable",
-      "effect": "increase attack by 2",
+      "effect": "increase attack by 1",
       "quantity": 7
     },
     {
@@ -123,7 +132,7 @@
       "gold_value": 100,
       "description": "An elixir that boosts your defense.",
       "item_type": "consumable",
-      "effect": "increase defense by 2",
+      "effect": "increase defense by 1",
       "quantity": 7
     },
     {

@@ -20,13 +20,19 @@ class Fish:
         self.actual_size = round(random.uniform(self.min_size, self.max_size), 1)
 
     def get_sell_value(self):
-        """Calculate gold value based on actual size vs average size"""
+        """Calculate gold value based on actual size vs average size with reduced impact"""
         if self.avg_size <= 0:
             return self.gold_value
-        size_multiplier = self.actual_size / self.avg_size
-        # Size multiplier affects gold: bigger fish = more gold, smaller = less
+        
+        size_ratio = self.actual_size / self.avg_size
+        
+        if size_ratio >= 1.0:
+            size_multiplier = 1.0 + min(0.25, (size_ratio - 1.0) * 0.5)
+        else:
+            size_multiplier = max(0.75, 1.0 - (1.0 - size_ratio) * 0.5)
+        
         final_value = int(self.gold_value * size_multiplier)
-        return max(1, final_value)  # Minimum 1 gold
+        return max(1, final_value) 
     
     def __str__(self):
         return f"{self.name} (Rarity: {self.rarity}, Value: {self.gold_value}g)"
@@ -131,6 +137,7 @@ class Trade:
         self.effect = trade_data["effect"]
         self.gold_value = trade_data["gold_value"]
         self.trigger = trade_data["trigger"]  # Can be a single dict or list of dicts
+
     
     def execute_trigger(self, player, game):
         """Execute the trigger action(s) based on structured trigger data"""
@@ -216,6 +223,21 @@ class Trade:
                     player.completed_trades.append(self.name)
                     results.append("New fishing location unlocked!")
             
+            elif action == "unlock_license":
+                # NEW: Handle fishing license unlocking
+                if target == "fishing_license":
+                    # Add fishing license to player
+                    if not hasattr(player, 'has_fishing_license'):
+                        player.has_fishing_license = False
+                    
+                    if player.has_fishing_license:
+                        results.append("You already have a fishing license!")
+                    else:
+                        player.has_fishing_license = True
+                        results.append("🎫 Fishing License obtained! You can now fish at licensed locations!")
+                else:
+                    results.append(f"Unknown license type: {target}")
+
             elif action == "heal":
                 # Heal player by amount or percentage
                 amount = trigger.get("amount", 50)
@@ -256,7 +278,6 @@ class Player:
 
         self.name = ""
         self.backstory = ""
-        self.age = 0
 
         # Inventory
         self.inventory = []  
@@ -264,6 +285,8 @@ class Player:
         self.completed_trades = []  
         self.unlocked_locations = []  # Track unlocked locations by name
         self.completed_explorations = []  # Track completed explorations by name
+
+        self.has_fishing_license = False  # Track if player has a fishing license
         
         # Equipment slots
         self.equipped_rod = None
@@ -1454,29 +1477,43 @@ class FishingGame:
         if not hasattr(self, 'player') or self.player is None:
             return
 
-        # Prevent multiple gear windows
-        if hasattr(self, 'gear_window') and self.gear_window.winfo_exists():
-            self.gear_window.lift()  # Bring existing window to front
+        # FIXED: Check for trade_window instead of gear_window
+        if hasattr(self, 'trade_window') and self.trade_window.winfo_exists():
+            self.trade_window.lift()  # Bring existing window to front
             return
         
-        # Disable gear button temporarily
-        if hasattr(self, 'gear_btn'):
-            self.gear_btn.config(state=tk.DISABLED)
-            self.root.after(1000, lambda: self.gear_btn.config(state=tk.NORMAL))
+        # FIXED: Disable trade_btn instead of gear_btn
+        if hasattr(self, 'trade_btn'):
+            self.trade_btn.config(state=tk.DISABLED)
+            self.root.after(1000, lambda: self.trade_btn.config(state=tk.NORMAL))
 
         # Check if player has energy to trade
         if not self.player.can_fish():  # Using can_fish() since it checks energy > 0
             messagebox.showwarning("No Energy", "You need at least 1 energy to trade!")
             return
 
-        # Generate 3 random trade options only if we don't have them already
+        # Filter trades based on level requirement
+        available_trades_for_level = []
+        for trade_data in self.trade_data['trade']:
+            level_requirement = trade_data.get('level_requirement', 1)  # Default to level 1 if not specified
+            if self.player.level >= level_requirement:
+                available_trades_for_level.append(trade_data)
+
+        # FIXED: Generate 3 random trade options from FILTERED list
         if not hasattr(self, 'current_trade_options') or not self.current_trade_options:
-            if len(self.trade_data['trade']) < 3:
-                messagebox.showwarning("No Trades", "Not enough trades available!")
-                return
+            if len(available_trades_for_level) < 3:
+                # If less than 3 trades available for level, show all available
+                if len(available_trades_for_level) == 0:
+                    messagebox.showinfo("No Trades Available", f"No trades available for level {self.player.level}! Reach higher levels to unlock more trades.")
+                    return
+                else:
+                    # Show all available trades if less than 3
+                    selected_trades = available_trades_for_level
+            else:
+                # FIXED: Use filtered list instead of self.trade_data['trade']
+                selected_trades = random.sample(available_trades_for_level, 3)
             
-            available_trades = random.sample(self.trade_data['trade'], 3)
-            self.current_trade_options = [Trade(trade_data) for trade_data in available_trades]
+            self.current_trade_options = [Trade(trade_data) for trade_data in selected_trades]
 
         # Create new window
         self.trade_window = tk.Toplevel(self.root)
@@ -1524,6 +1561,13 @@ class FishingGame:
         """Create a trade card UI element"""
         if not hasattr(self, 'player') or self.player is None:
             return
+          # Find the original trade data to get level requirement
+        level_requirement = 1  # Default
+        for trade_data in self.trade_data['trade']:
+            if trade_data['name'] == trade.name:
+                level_requirement = trade_data.get('level_requirement', 1)
+                break
+      
         # Main card frame
         card_frame = tk.Frame(parent, bg="#FFFFFF", relief=tk.RAISED, bd=2)
         card_frame.pack(fill=tk.X, pady=10, padx=10)
@@ -1581,6 +1625,16 @@ class FishingGame:
             messagebox.showwarning("No Energy", "You need at least 1 energy to trade!")
             return
         
+        # NEW: Check if player only has 1 energy left and confirm
+        if self.player.energy == 1:
+            confirm = messagebox.askyesno("Last Energy Warning", 
+                                        "⚠️ You only have 1 energy left!\n\n"
+                                        "Trading will use your last energy and end your adventure.\n\n"
+                                        "Are you sure you want to make this trade?",
+                                        icon='warning')
+            if not confirm:
+                return  # Player chose not to trade
+
         # Confirm trade
         confirm = messagebox.askyesno("Confirm Trade", 
                                     f"Buy '{trade.name}' for {trade.gold_value}g?\n\nEffect: {trade.effect}\n(Costs 1 energy)")
@@ -3451,7 +3505,7 @@ class FishingGame:
                     self.player.energy = min(self.player.max_energy, self.player.energy + energy_amount)
                     actual_energy = self.player.energy - old_energy
                     self.player.inventory.remove(item)
-                    return f"Restored {actual_energy} energy!"
+                    return f"Gained {actual_energy} energy!"
         
         return "Item cannot be used."
 
@@ -3966,6 +4020,14 @@ class FishingGame:
                                 font=("Helvetica", 12), bg="#ADD8E6")
             stats_label.pack(side=tk.LEFT)
             
+            # Add fishing license status to stats
+            if hasattr(self.player, 'has_fishing_license') and self.player.has_fishing_license:
+                stats_text += " | 🎫 Licensed"
+            
+            stats_label = tk.Label(info_container, text=stats_text, 
+                                font=("Helvetica", 12), bg="#ADD8E6")
+            stats_label.pack(side=tk.LEFT)
+
             # XP progress bar
             if xp_progress < 100:  # Only show progress bar if not at max XP
                 xp_bar_frame = tk.Frame(info_container, bg="#ADD8E6")
@@ -4467,12 +4529,35 @@ class FishingGame:
                 self.show_game_over_screen()
                 return
 
+            # Get selected location from dropdown
+            selected_location = self.location_var.get()
+            # Find the location data to check license requirement
+            location_data = None
+            for loc_data in self.location_data['locations']:
+                if loc_data['name'] == selected_location:
+                    location_data = Location(loc_data)
+                    break
+            
+            # Check fishing license requirement BEFORE using energy
+            if location_data and location_data.fishing_license_required:
+                if not hasattr(self.player, 'has_fishing_license') or not self.player.has_fishing_license:
+                    self.log_message(f"🚫 {selected_location} requires a Fishing License! Buy one from the Trade Deck.")
+                    return
+
+            # NEW: Check if player only has 1 energy left and confirm
+            if self.player.energy == 1:
+                confirm = messagebox.askyesno("Last Energy Warning", 
+                                            "⚠️ You only have 1 energy left!\n\n"
+                                            "Fishing will use your last energy and end your adventure.\n\n"
+                                            "Are you sure you want to continue fishing?",
+                                            icon='warning')
+                if not confirm:
+                    return  # Player chose not to fish
+
             if not self.player.use_energy(1):
                 self.log_message("❌ Not enough energy to fish!")
                 return
 
-            # Get selected location from dropdown
-            selected_location = self.location_var.get()
             result = self.go_fishing(selected_location)
 
             if selected_location == "Village Pond":
