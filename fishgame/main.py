@@ -686,7 +686,7 @@ class FishingGame:
                 while True:
                     try:
                         frame = tk.PhotoImage(file=image_path, format=f"gif -index {frame_index}")
-                        scaled_frame = frame.zoom(10)  # Makes image larger
+                        scaled_frame = frame.zoom(5)  # Makes image larger
                         self.gif_frames.append(scaled_frame)
                         frame_index += 1
                     except:
