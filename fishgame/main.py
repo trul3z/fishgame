@@ -4123,7 +4123,7 @@ class FishingGame:
                 while True:
                     try:
                         frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
-                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        scaled_frame = frame.zoom(5)  # Same scaling as original
                         self.gif_frames.append(scaled_frame)
                         frame_index += 1
                     except:
@@ -4162,7 +4162,7 @@ class FishingGame:
                 while True:
                     try:
                         frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
-                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        scaled_frame = frame.zoom(5)  # Same scaling as original
                         self.gif_frames.append(scaled_frame)
                         frame_index += 1
                     except:
@@ -4205,7 +4205,7 @@ class FishingGame:
                 while True:
                     try:
                         frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
-                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        scaled_frame = frame.zoom(5)  # Same scaling as original
                         self.gif_frames.append(scaled_frame)
                         frame_index += 1
                     except:
@@ -4242,7 +4242,7 @@ class FishingGame:
                 while True:
                     try:
                         frame = tk.PhotoImage(file=new_image_path, format=f"gif -index {frame_index}")
-                        scaled_frame = frame.zoom(10)  # Same scaling as original
+                        scaled_frame = frame.zoom(5)  # Same scaling as original
                         self.gif_frames.append(scaled_frame)
                         frame_index += 1
                     except:
