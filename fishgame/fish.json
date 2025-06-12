@@ -3,7 +3,7 @@
     {
       "name": "Minnow",
       "rarity": 30,
-      "type": "Common",
+      "type": "common",
       "min_size": 2,
       "max_size": 4,
       "avg_size": 3,
@@ -15,7 +15,7 @@
     {
       "name": "Glubfish",
       "rarity": 50,
-      "type": "Common",
+      "type": "common",
       "min_size": 3,
       "max_size": 6,
       "avg_size": 4.5,
@@ -27,7 +27,7 @@
     {
       "name": "Catfish",
       "rarity": 240,
-      "type": "Common",
+      "type": "common",
       "min_size": 10,
       "max_size": 20,
       "avg_size": 15,
@@ -39,7 +39,7 @@
     {
       "name": "Common Bass",
       "rarity": 230,
-      "type": "Common",
+      "type": "common",
       "min_size": 12,
       "max_size": 18,
       "avg_size": 15,
@@ -51,7 +51,7 @@
     {
       "name": "7-Colored Fish",
       "rarity": 550,
-      "type": "Common",
+      "type": "common",
       "min_size": 1,
       "max_size": 3,
       "avg_size": 2,
@@ -63,7 +63,7 @@
     {
       "name": "Golden Minnow",
       "rarity": 700,
-      "type": "Common",
+      "type": "common",
       "min_size": 1,
       "max_size": 2,
       "avg_size": 1.5,
@@ -75,7 +75,7 @@
     {
       "name": "Scaly Scalefish",
       "rarity": 800,
-      "type": "Common",
+      "type": "common",
       "min_size": 10,
       "max_size": 15,
       "avg_size": 12,
@@ -86,20 +86,20 @@
     },
     {
       "name": "Golden Carp",
-      "type": "Common",
-      "rarity": 975,
+      "type": "common",
+      "rarity": 999,
       "min_size": 15,
       "max_size": 25,
       "avg_size": 20,
       "gold_value": 200,
-      "food_value": 10,
+      "food_value": 8,
       "description": "A rare golden fish said to bring good fortune",
       "fish_effect": "+1 luck when held"
     },
     {
       "name": "Dragon Fin",
       "rarity": 500,
-      "type": "Dragon",
+      "type": "dragon",
       "min_size": 25,
       "max_size": 40,
       "avg_size": 30,
@@ -111,7 +111,7 @@
     {
       "name": "Wyrmfish",
       "rarity": 900,
-      "type": "Dragon",
+      "type": "dragon",
       "min_size": 30,
       "max_size": 50,
       "avg_size": 40,
@@ -123,7 +123,7 @@
     {
       "name": "Largemouth Bass",
       "rarity": 150,
-      "type": "Lake",
+      "type": "lake",
       "min_size": 10,
       "max_size": 20, 
       "avg_size": 15,
@@ -135,7 +135,7 @@
     {
       "name": "Crappie",
       "rarity": 60,
-      "type": "Lake",
+      "type": "lake",
       "min_size": 4,
       "max_size": 8,
       "avg_size": 6,
@@ -147,7 +147,7 @@
     {
       "name": "Lake Perch",
       "rarity": 200,
-      "type": "Lake",
+      "type": "lake",
       "min_size": 5,
       "max_size": 10,
       "avg_size": 7.5,
@@ -159,7 +159,7 @@
     {
       "name": "Lake Trout",
       "rarity": 300,
-      "type": "Lake",
+      "type": "lake",
       "min_size": 10,
       "max_size": 20,
       "avg_size": 15,
@@ -171,7 +171,7 @@
     {
       "name": "Lake Pike",
       "rarity": 400,
-      "type": "Lake",
+      "type": "lake",
       "min_size": 15,
       "max_size": 25,
       "avg_size": 20,
@@ -183,7 +183,7 @@
     {
       "name": "Muskellunge",
       "rarity": 999,
-      "type": "Lake",
+      "type": "lake",
       "min_size": 30,
       "max_size": 50,
       "avg_size": 40,
@@ -195,7 +195,7 @@
     {
       "name": "Coral Clownfish",
       "rarity": 400,
-      "type": "Ocean",
+      "type": "reef",
       "min_size": 2,
       "max_size": 4,
       "avg_size": 3,
@@ -207,7 +207,7 @@
     {
       "name": "Bluefish",
       "rarity": 300,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 5,
       "max_size": 10,
       "avg_size": 7,
@@ -219,7 +219,7 @@
     {
       "name": "Freshwater Stingray",
       "rarity": 300,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 2,
       "max_size": 5,
       "avg_size": 3.5,
@@ -231,7 +231,7 @@
     {
       "name": "Silverfin",
       "rarity": 400,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 6,
       "max_size": 12,
       "avg_size": 9,
@@ -243,7 +243,7 @@
     {
       "name": "Moonfish",
       "rarity": 600,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 3,
       "max_size": 6,
       "avg_size": 4.5,
@@ -255,7 +255,7 @@
     {
       "name": "Crystal Fish",
       "rarity": 800,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 10,
       "max_size": 15,
       "avg_size": 12,
@@ -267,7 +267,7 @@
     {
       "name": "Zombie Fish",
       "rarity": 220,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 5,
       "max_size": 10,
       "avg_size": 7.5,
@@ -279,7 +279,7 @@
     {
       "name": "Luminous Blackfish",
       "rarity": 900,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 8,
       "max_size": 12,
       "avg_size": 10,
@@ -291,7 +291,7 @@
     {
       "name": "Gigantic Goldfish",
       "rarity": 900,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 20,
       "max_size": 30,
       "avg_size": 25,
@@ -303,7 +303,7 @@
     {
       "name": "Phoenix Fish",
       "rarity": 950,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 5,
       "max_size": 10,
       "avg_size": 7.5,
@@ -315,7 +315,7 @@
     {
       "name": "Ethereal Eel",
       "rarity": 950,
-      "type": "Rare",
+      "type": "rare",
       "min_size": 5,
       "max_size": 10,
       "avg_size": 7,
@@ -327,7 +327,7 @@
     {
       "name": "Pike",
       "rarity": 60,
-      "type": "River",
+      "type": "river",
       "min_size": 15,
       "max_size": 25,
       "avg_size": 20,
@@ -339,7 +339,7 @@
     {
       "name": "Brook Trout",
       "rarity": 50,
-      "type": "River",
+      "type": "river",
       "min_size": 8,
       "max_size": 12, 
       "avg_size": 10,
@@ -351,7 +351,7 @@
     {
       "name": "Salmon",
       "rarity": 90,
-      "type": "River",
+      "type": "river",
       "min_size": 10,
       "max_size": 20,
       "avg_size": 15,
@@ -363,7 +363,7 @@
     {
       "name": "Rainbow Trout",
       "rarity": 100,
-      "type": "River",
+      "type": "river",
       "min_size": 6,
       "max_size": 10,
       "avg_size": 8,
@@ -375,7 +375,7 @@
     {
       "name": "Sea Urchin",
       "rarity": 100,
-      "type": "Shore",
+      "type": "shore",
       "min_size": 3,
       "max_size": 6,
       "avg_size": 4,
@@ -387,7 +387,7 @@
     {
       "name": "Oyster",
       "rarity": 100,
-      "type": "Shore",
+      "type": "shore",
       "min_size": 1,
       "max_size": 3,
       "avg_size": 2,
@@ -399,7 +399,7 @@
     {
       "name": "Razor Clam",
       "rarity": 550,
-      "type": "Shore",
+      "type": "shore",
       "min_size": 4,
       "max_size": 8,
       "avg_size": 6,
@@ -411,7 +411,7 @@
     {
       "name": "Low Tide Snapper",
       "rarity": 600,
-      "type": "Shore",
+      "type": "shore",
       "min_size": 5,
       "max_size": 12,
       "avg_size": 8,
@@ -423,7 +423,7 @@
     {
       "name": "Deep Sea Cupid Fish",
       "rarity": 700,
-      "type": "Trench",
+      "type": "trench",
       "min_size": 6,
       "max_size": 10,
       "avg_size": 8,
@@ -435,7 +435,7 @@
     {
       "name": "Anglerfish",
       "rarity": 120,
-      "type": "Trench",
+      "type": "trench",
       "min_size": 5,
       "max_size": 8,
       "avg_size": 6,
@@ -447,7 +447,7 @@
     {
       "name": "Giant Squid",
       "rarity": 999,
-      "type": "Trench",
+      "type": "trench",
       "min_size": 20,
       "max_size": 30,
       "avg_size": 25,
@@ -459,7 +459,7 @@
     {
       "name": "Lava Eel",
       "rarity": 800,
-      "type": "Volcanic",
+      "type": "volcanic",
       "min_size": 10,
       "max_size": 15,
       "avg_size": 12,
@@ -471,7 +471,7 @@
     {
       "name": "Firefish",
       "rarity": 400,
-      "type": "Volcanic",
+      "type": "volcanic",
       "min_size": 5,
       "max_size": 10,
       "avg_size": 7.5,

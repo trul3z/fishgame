@@ -263,12 +263,12 @@ class Player:
         # Basic stats
         self.health = 20
         self.max_health = 20
-        self.gold = 0  
-        self.energy = 5 
-        self.max_energy = 100000
+        self.gold = 100000  
+        self.energy = 10 
+        self.max_energy = 100000000
         self.level = 1
         self.xp = 0
-        self.xp_to_next_level = 50  # XP needed to level up
+        self.xp_to_next_level = 20  # XP needed to level up
         
         # Base stats (before equipment bonuses)
         self.base_luck = 10
@@ -790,7 +790,10 @@ class FishingGame:
                 self.exploration_data = {"explorations": {}}
            
             print(f"Total loaded: {len(self.fish_data['fish'])} fish, {len(self.item_data['items'])} items, {len(self.gear_data['gear'])} gear, {len(self.enemy_data['enemies'])} enemies, {len(self.location_data['locations'])} locations, {len(self.trade_data['trade'])} trade options")
-            
+
+            # ADD THIS NEW METHOD CALL HERE
+            self.create_location_enemy_mapping()
+
         except Exception as e:
             print(f"❌ Error loading JSON: {e}")
             print(f"❌ Error type: {type(e).__name__}")
@@ -865,7 +868,17 @@ class FishingGame:
 
         cumulative += location.enemy_spawn_chance
         if rand < cumulative:
-            return "🦈 Enemy encountered!" + bait_active_msg
+            # FIXED: Use location-specific enemies
+            location_obj = None
+            for loc_data in self.location_data['locations']:
+                if loc_data['name'] == location_name:
+                    location_obj = Location(loc_data)
+                    break
+            
+            if location_obj:
+                return self.encounter_enemy(location_obj) + bait_active_msg
+            else:
+                return "🦈 Enemy encountered but location error!" + bait_active_msg
 
         # Apply luck reduction to "nothing" chance (1% per luck point, max 15% reduction)
         luck_nothing_reduction = min(0.15, player_luck * 0.01)
@@ -878,25 +891,49 @@ class FishingGame:
         # Catch nothing (remaining probability)
         return "🎣 Nothing caught... try again!" + bait_active_msg
 
+    def create_location_enemy_mapping(self):
+        """Create mapping of location names to their enemy types"""
+        self.location_enemy_types = {}
+        for loc_data in self.location_data['locations']:
+            location_name = loc_data['name']
+            enemy_types = loc_data.get('enemy types', [])
+            self.location_enemy_types[location_name] = enemy_types
+
     def encounter_enemy(self, location):
-        """Encounter an enemy and start combat"""
-        # Select random enemy from available enemies
-        available_enemies = []
-        for enemy_data in self.enemy_data['enemies']:
-            if enemy_data['enemy_type'] in ['common']:  # Can expand this based on location
-                available_enemies.append(enemy_data)
+        """Encounter an enemy and start combat - FIXED to use location enemy types"""
+        # Get valid enemies for this location
+        valid_enemies = self.get_valid_enemies_for_location(location.name)
         
-        if not available_enemies:
-            return "🦈 Enemy encountered but none available!"
+        if not valid_enemies:
+            return f"🦈 Enemy encountered but none available for {location.name}!"
         
         # Weighted random selection by rarity (lower rarity = more common)
-        weights = [max(1, 1000 - enemy.get('rarity', 1)) for enemy in available_enemies]
-        enemy_data = random.choices(available_enemies, weights=weights)[0]
+        weights = [max(1, 1000 - enemy.get('rarity', 1)) for enemy in valid_enemies]
+        enemy_data = random.choices(valid_enemies, weights=weights)[0]
         enemy = Enemy(enemy_data)
         
         # Start combat
         combat_result = self.start_combat(enemy)
         return combat_result
+
+    def get_valid_enemies_for_location(self, location_name):
+        """Get enemies that can spawn at this location"""
+        valid_enemies = []
+        
+        # Get enemy types allowed at this location
+        allowed_enemy_types = self.location_enemy_types.get(location_name, [])
+        
+        if not allowed_enemy_types:
+            return []  # No enemies if no types specified
+        
+        for enemy_data in self.enemy_data['enemies']:
+            enemy_type = enemy_data.get('enemy_type', '')
+            
+            # Check if the enemy's type matches any of the location's allowed types
+            if enemy_type in allowed_enemy_types:
+                valid_enemies.append(enemy_data)
+        
+        return valid_enemies
 
     def start_combat(self, enemy):
         """Start combat with an enemy"""
@@ -1711,7 +1748,6 @@ class FishingGame:
         # Close trade window and show success
         self.trade_window.destroy()
         messagebox.showinfo("Trade Complete", f"Successfully traded for '{trade.name}'!\n\n{result}")
-
 
     def start_game(self):
         """Start character creation process"""
@@ -3691,6 +3727,21 @@ class FishingGame:
             if self.player.level < requirements['min_level']:
                 return False
         
+        # ADD THIS: Check has_item requirement
+        if 'has_item' in requirements:
+            required_item = requirements['has_item']
+            player_has_item = False
+            
+            for item in self.player.inventory:
+                if hasattr(item, 'name') and item.name == required_item:
+                    player_has_item = True
+                    break
+            
+            if not player_has_item:
+                print(f"❌ DEBUG: Missing required item: {required_item}")
+                return False
+            print(f"✅ DEBUG: Has required item: {required_item}")
+
         # Check exploration count requirement
         if 'min_explorations' in requirements:
             location_name = event.get('location', '')
@@ -3795,15 +3846,11 @@ class FishingGame:
 
     def handle_exploration_actions(self, exploration):
         """Handle actions from exploration events - standardized to use 'add_' format"""
-        print(f"🔍 DEBUG: handle_exploration_actions called with: {exploration}")
-        
         if 'actions' not in exploration:
-            print("❌ DEBUG: No actions found in exploration")
             return
-        
+
         actions = exploration['actions']
-        print(f"🔍 DEBUG: Found actions: {actions}")
-        
+
         # Handle location unlocking
         if 'unlock_location' in actions:
             location_name = actions['unlock_location']
@@ -3882,8 +3929,33 @@ class FishingGame:
                     print(f"❌ DEBUG: Single item '{item_name}' not found!")
                     self.log_message(f"⚠️ Error: Item '{item_name}' not found in items.json!")
         
+        # FIXED: Properly handle remove_item action with better item matching
+        if 'remove_item' in actions:
+            item_name = actions['remove_item']
+            print(f"🗑️ DEBUG: Trying to remove item: {item_name}")
+            print(f"🗂️ DEBUG: Current inventory: {[getattr(item, 'name', 'NO_NAME') for item in self.player.inventory]}")
+            
+            # Find and remove the item from player inventory
+            item_found = False
+            for item in self.player.inventory[:]:  # Use slice copy to avoid modification issues
+                # Check the item's name attribute directly
+                item_obj_name = getattr(item, 'name', None)
+                print(f"🔍 DEBUG: Checking item: {item_obj_name} vs target: {item_name}")
+                
+                if item_obj_name == item_name:
+                    print(f"✅ DEBUG: Found matching item: {item_obj_name}")
+                    self.player.inventory.remove(item)
+                    self.log_message(f"📦 Used {item_name}")
+                    item_found = True
+                    break
+            
+            if not item_found:
+                print(f"❌ DEBUG: Could not find item '{item_name}' to remove!")
+                print(f"❌ DEBUG: Available items: {[getattr(item, 'name', 'NO_NAME') for item in self.player.inventory]}")
+                self.log_message(f"⚠️ Could not find {item_name} to remove!")
+
         print("🔄 DEBUG: Updating player info...")
-        # Update inventory display after adding items
+        # Update inventory display after adding/removing items
         self.update_player_info()
         print("✅ DEBUG: Player info updated")
 
@@ -4043,10 +4115,6 @@ class FishingGame:
             if hasattr(self.player, 'has_fishing_license') and self.player.has_fishing_license:
                 stats_text += " | 🎫 Licensed"
             
-            stats_label = tk.Label(info_container, text=stats_text, 
-                                font=("Helvetica", 12), bg="#ADD8E6")
-            stats_label.pack(side=tk.LEFT)
-
             # XP progress bar
             if xp_progress < 100:  # Only show progress bar if not at max XP
                 xp_bar_frame = tk.Frame(info_container, bg="#ADD8E6")

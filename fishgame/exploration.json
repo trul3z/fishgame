@@ -148,7 +148,26 @@
         "requirements": {
           "has_gear": "Lighthouse Key"
         }
-    }    
+      }
+    ],
+    "Mountain Stream": [
+      {
+        "id": "fox_at_the_stream",
+        "title": "🦊 Fox at the Stream",
+        "description": "The bait in your bag has attracted a curious fox. It approaches cautiously.",
+        "dialogue": [
+          "🦊 Fox: \"Hello, traveler. I see you have some tasty bait there.\"",
+          "Fox: \"I can help you find better fishing spots if you share some of that bait with me.\"",
+          "Fox: \"What do you say? A little trade for a little help?\""
+        ],
+        "actions": {
+          "unlock_location": "Crystal Lake"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_item": "Bait"
+        }
+      }
     ]
   }
-  }    
+}
