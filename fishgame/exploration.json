@@ -1,0 +1,196 @@
+
+{
+  "explorations": {
+    "Village Pond": [
+      {
+        "id": "first_hermit_encounter",
+        "title": "Mysterious Hermit",
+        "gif_path": "spr_hermit1.gif",
+        "dialogue": [
+          "🧙‍♂️ Hermit: \"Ah, another soul drawn to these peaceful waters...\"",
+          "Hermit: \"I've been fishing these shores for many years.\"",
+          "Hermit: \"You have the look of someone just beginning their journey.\"",
+          "💡 Hermit: \"Luck helps you find rarer catches and avoid catching nothing. Attack and Defense serve you well against creatures in deeper waters. Speed determines combat strikes.\"",
+          "Hermit: \"The pond may seem to be enough, but greater adventures await beyond these shores.\"",
+          "Hermit: \"May the waters bring you fortune, traveler...\" *The hermit returns to quiet fishing.*"
+        ],
+        "actions": {},
+        "repeatable": false,
+        "requirements": null
+      },
+      {
+        "id": "second_hermit_encounter",
+        "title": "The Hermit's Deeper Wisdom",
+        "gif_path": "spr_hermit1.gif",
+        "dialogue": [
+          "🧙‍♂️ Hermit: \"Ah, you've returned! I can see the waters have been kind to you...\"",
+          "Hermit: \"Your casting has improved, young angler. You're ready for greater challenges.\"",
+          "Hermit: \"Tell me, have you tried the deeper sections of this very pond?\"",
+          "Hermit: \"Most fishers stay near the shallows, content with small catches...\"",
+          "Hermit: \"But beneath these calm surface waters lies another realm...\"",
+          "Hermit: \"I believe you're ready now. Seek out the deeper waters, brave angler!\"",
+          "🗺️ The hermit's words awaken your knowledge of the pond's hidden depths!",
+          "Narrator: *The Old man clutches his chest and faints, collapsing into the water.*",
+          "Narrator: *You should get out of here before the villagers find you with a dead hermit!*"
+        ],
+        "actions": {
+          "unlock_location": "Village Pond Depths"
+        },
+        "repeatable": false,
+        "requirements": {
+          "completed_explorations": ["first_hermit_encounter"]
+        }
+      },
+      {
+        "id": "third_hermit_encounter",
+        "title": "The Hermit's Ring",
+        "dialogue": [
+          "A ring floats where the Hermit last sat, you should take it."
+        ],
+        "actions": {
+          "add_gear": "Dead Hermit's Ring"
+        },
+        "repeatable": false,
+        "requirements": {
+          "completed_explorations": ["first_hermit_encounter", "second_hermit_encounter"]
+        }
+      }
+    ],
+    "Village Well": [
+      {
+        "id": "exploring_the_well",
+        "title": "🪣 Exploring the Well",
+        "dialogue": [
+          "This village has been abandoned for years, but the well seems to be stirring with life.",
+          "You seek to understand why you have such a strong urge to continue fishing."
+        ],
+        "actions": {},
+        "repeatable": false,
+        "requirements": null
+      },
+      {
+        "id": "digging_near_the_well",
+        "title": "🪓 Digging Near the Well",
+        "dialogue": [
+          "You start digging and uncover a chest full of treasure.",
+          "Inside the chest, you find some old coins and a map to a secret fishing spot near the outskirts of the village."
+        ],
+        "actions": {
+          "add_item": [
+            {
+              "name": "Treasure Chest",
+              "quantity": 1
+            }  
+          ],
+          "unlock_location": "Village Secret Cove"
+        },
+        "repeatable": false,
+        "requirements": {
+          "completed_explorations": ["exploring_the_well"]
+        }
+      }
+    ],
+    "Village Pond Depths": [
+      {
+        "id": "corpse_of_the_hermit",
+        "title": "🧟‍♂️ Corpse of the Hermit",
+        "dialogue": [
+          "You find the corpse of the hermit, his fishing rod still firmly clutched in his pincer."
+        ],
+        "actions": {"add_gear": "Dead Hermit's Rod"},
+        "repeatable": false,
+        "requirements": {
+          "completed_explorations": ["third_hermit_encounter"]
+        }
+      }
+    ],
+    "Ocean Shore": [
+      {
+        "id": "exploring_the_shore",
+        "title": "Guided by the Ring,",
+        "dialogue": [
+          "You feel a strange pull from the Dead Hermit's Ring, guiding you towards the ocean shore.",
+          "You decide to follow the ring's guidance and head towards the lighthouse pier."
+        ],
+        "actions": {
+          "unlock_location": "Lighthouse Pier"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_gear": "Dead Hermit's Ring"
+        }
+      }
+    ],
+    "Lighthouse Pier": [
+      {
+        "id": "lighthouse_pier_encounter",
+        "title": "🗼 Lighthouse Pier Encounter",
+        "dialogue": [
+          "You approach the door to the lighthouse, but it is locked tight,",
+          "The Dead Hermit's Ring begins to glow and pull you towards the water.",
+          "It seems like the ring wants you to keep fishing, even though you wanted to enter the lighthouse."
+        ],
+        "actions": {},
+        "repeatable": false,
+        "requirements": {
+          "has_gear": "Dead Hermit's Ring",
+          "does_not_have_gear": "Lighthouse Key"
+        }
+      },
+      {
+        "id": "open_lighthouse_door",
+        "title": "🗝️ Opening the Lighthouse Door",
+        "dialogue": [
+          "You take out the Lighthouse Key and insert it into the lock. It breaks in half, but you manage to turn it.",
+          "With a satisfying click, the door swings open, revealing the interior of the lighthouse.",
+          "You step inside.",
+          "You notice in one corner a fishing hole, it seems like the Dead Hermit used to fish here.",
+          "You spot a tunic on the floor, it the ring feels war as you pick it up."
+        ],
+        "actions": {
+          "add_gear": "Dead Hermit's Tunic",
+          "unlock_location": "Lighthouse Interior",
+          "remove_item": "Lighthouse Key"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_item": "Lighthouse Key"
+        }
+      }
+    ],
+    "Mountain Stream": [
+      {
+        "id": "fox_at_the_stream",
+        "title": "🦊 Fox at the Stream",
+        "dialogue": [
+          "The bait in your pocket catches the attention of a curious fox.",
+          "🦊 Fox: \"Hello, traveler. I see you have some tasty bait there.\"",
+          "Fox: \"I can help you find better fishing spots if you share some of that bait with me.\"",
+          "Fox: \"What do you say? A little trade for a little help?\""
+        ],
+        "actions": {
+          "unlock_location": "Crystal Lake",
+          "remove_item": "Bait"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_item": "Bait"
+        }
+      },
+      {
+        "id": "mountain_stream_encounter",
+        "title": "Curious Animals at the Stream",
+        "dialogue": [
+          "A curious fox approaches you, sniffing the air.",
+          "🦊/ The last fisherman had some bait he shared with me.",
+          "🦊/ I can help you find better fishing spots if you had some bait to share."
+        ],
+        "actions": {},
+        "repeatable": true,
+        "requirements": {
+          "does_not_have_item": "Bait"
+        }
+      }
+    ]
+  }
+}

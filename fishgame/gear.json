@@ -1,0 +1,234 @@
+{
+  "gear": [
+    {
+      "name": "Sturdy Rod",
+      "gear_type": "rod",
+      "gold_value": 100,
+      "rarity": -1,
+      "description": "A well-made fishing rod with better balance",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 2
+      }
+    },
+    {
+      "name": "Lucky Necklace",
+      "gear_type": "necklace",
+      "gold_value": 200,
+      "rarity": 900,
+      "description": "A charm said to bring good fortune to those who wear it while fishing.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 3
+      }
+    },
+    {
+      "name": "Leather Gloves",
+      "gear_type": "glove",
+      "gold_value": 50,
+      "rarity": 2,
+      "description": "Protective gloves for better grip",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 1,
+        "defense": 1
+      }
+    },
+    {
+      "name": "Combat Boots",
+      "gear_type": "foot",
+      "gold_value": 75,
+      "rarity": 3,
+      "description": "Sturdy boots that improve your footing",
+      "quantity": 1,
+      "stat_bonus": {
+        "speed": 1,
+        "defense": 1
+      }
+    },
+    {
+      "name": "Fishing Hat",
+      "gear_type": "head",
+      "gold_value": 30,
+      "rarity": 20,
+      "description": "A hat that keeps the sun out of your eyes",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1
+      }
+    },
+    {
+      "name": "Chain Mail",
+      "gear_type": "torso",
+      "gold_value": 150,
+      "rarity": 250,
+      "description": "Metal armor that protects your chest",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 3
+      }
+    },
+    {
+      "name": "Steel Knife",
+      "gear_type": "knife",
+      "gold_value": 80,
+      "rarity": 200,
+      "description": "A sharp blade for combat and utility",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 2
+      }
+    },
+    {
+      "name": "Magic Ring",
+      "gear_type": "ring",
+      "gold_value": 300,
+      "rarity": 800,
+      "description": "An enchanted ring that enhances all abilities",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 2,
+        "defense": 2,
+        "speed": 2,
+        "luck": 2
+      }
+    },
+    {
+      "name": "Fishing Pants",
+      "gear_type": "leg",
+      "gold_value": 40,
+      "rarity": 100,
+      "description": "Water-resistant pants for fishing",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1
+      }
+    },
+    {
+      "name": "Old Rod",
+      "gear_type": "rod",
+      "gold_value": 20,
+      "rarity": -1,
+      "description": "A worn-out fishing rod",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1
+      }
+    },
+    {
+      "name": "Rusty Knife",
+      "gear_type": "knife",
+      "gold_value": 1,
+      "rarity": -1,
+      "description": "A dull knife that's seen better days",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 1
+      }
+    },
+    {
+      "name": "Old Shirt",
+      "gear_type": "torso",
+      "gold_value": 5,
+      "rarity": -1,
+      "description": "A faded shirt that's seen better days",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 1
+      }
+    },
+    {
+      "name": "Papa's Rod",
+      "gear_type": "rod",
+      "gold_value": 250,
+      "rarity": 200,
+      "description": "A legendary fishing rod passed down through generations",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 3,
+        "speed": 3
+      }
+    },
+    {
+      "name": "Fishing Boots",
+      "gear_type": "foot",
+      "gold_value": 50,
+      "rarity": 50,
+      "description": "Boots designed for fishing, providing comfort and stability",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1,
+        "defense": 1
+      }
+    },
+    {
+      "name": "Helmet",
+      "gear_type": "head",
+      "gold_value": 25,
+      "rarity": 100,
+      "description": "A protective helmet for fishing adventures",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 2
+      }
+    },
+    {
+      "name": "Spinny Hat",
+      "gear_type": "head",
+      "gold_value": 15,
+      "rarity": 50,
+      "description": "A fun hat with a spinning top, bringing joy to fishing",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 1
+      }
+    },
+    {
+      "name": "Bulletproof Vest",
+      "gear_type": "torso",
+      "gold_value": 500,
+      "rarity": 899,
+      "description": "Really helps when you get shot in the torso",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 2,
+        "luck": 1
+      }
+    },
+    {
+      "name": "Gloves of Dexterity",
+      "gear_type": "glove",
+      "gold_value": 120,
+      "rarity": 500,
+      "description": "Gloves that enhance your dexterity and grip",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 1,
+        "speed": 2
+      }
+    },
+    {
+      "name": "Dead Hermit's Ring",
+      "gear_type": "ring",
+      "gold_value": 1000,
+      "rarity": -1,
+      "description": "A ring that belonged to a long-dead hermit, it doesnt seem to do anything special.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 0
+      }
+    },
+    {
+      "name": "Dead Hermit's Rod",
+      "gear_type": "rod",
+      "gold_value": 500,
+      "rarity": -1,
+      "description": "A fishing rod that belonged to the village hermit.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 4,
+        "speed": 2
+      }
+    }
+  ]
+}
