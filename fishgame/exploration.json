@@ -332,7 +332,7 @@
           "Kevin marks a location on you map."
         ],
         "actions": {
-          "add_location": "Kevin's Secret Spot",
+          "unlock_location": "Kevin's Secret Spot",
           "remove_item": "Cocaine"
         },
         "repeatable": false,

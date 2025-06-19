@@ -4,6 +4,15 @@ import json
 import random
 import os
 try:
+    import pygame
+    pygame.mixer.init()
+    PYGAME_AVAILABLE = True
+    print("✅ Pygame imported successfully for audio")
+except ImportError as e:
+    print(f"❌ Pygame not available: {e}")
+    print("💡 Install with: pip install pygame")
+    PYGAME_AVAILABLE = False
+try:
     from PIL import Image, ImageTk
     PIL_AVAILABLE = True
     print("✅ PIL/Pillow imported successfully")
@@ -272,8 +281,8 @@ class Player:
         # Basic stats
         self.health = 20
         self.max_health = 20
-        self.gold = 0  
-        self.energy = 15 
+        self.gold = 1000  
+        self.energy = 150 
         self.max_energy = 100000000
         self.level = 1
         self.xp = 0
@@ -604,7 +613,11 @@ class FishingGame:
         self.root.configure(bg="#87CEEB")
         self.root.state('zoomed') 
         self.gif_running = False
-     
+        self.music_volume = 0.5
+        self.sound_effects_volume = 0.8
+        # Start background music
+        self.start_background_music()
+        self.load_sound_effects()
         self.create_widgets()
         self.load_json_data()
 
@@ -798,6 +811,126 @@ class FishingGame:
         except Exception as e:
             print(f"❌ GIF animation error: {e}")
             return
+
+    def start_background_music(self):
+        """Load and start playing lighthouse loop 2.mp3 on loop"""
+        if not PYGAME_AVAILABLE:
+            print("❌ Cannot play music - pygame not available")
+            return
+        
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            music_file = os.path.join(base_dir, "lighthouse loop 2.mp3")
+            
+            if os.path.exists(music_file):
+                pygame.mixer.music.load(music_file)
+                pygame.mixer.music.set_volume(self.music_volume)                
+                pygame.mixer.music.play(-1)  # -1 means loop forever
+                print("🎵 Background music started: lighthouse loop 2.mp3")
+            else:
+                print("❌ lighthouse loop 2.mp3 not found")
+                # List available MP3 files for debugging
+                mp3_files = [f for f in os.listdir(base_dir) if f.lower().endswith('.mp3')]
+                if mp3_files:
+                    print(f"📁 Available MP3 files: {mp3_files}")
+                else:
+                    print("📁 No MP3 files found in directory")
+                    
+        except Exception as e:
+            print(f"❌ Error loading music: {e}")
+
+    def adjust_music_volume(self, value):
+        """Adjust background music volume only"""
+        if not PYGAME_AVAILABLE:
+            return
+        
+        try:
+            self.music_volume = float(value) / 100.0  # Convert from 0-100 to 0.0-1.0
+            
+            # Update background music volume only
+            pygame.mixer.music.set_volume(self.music_volume)
+            
+            # Update the percentage label
+            if hasattr(self, 'music_volume_label'):
+                self.music_volume_label.config(text=f"{int(self.music_volume * 100)}%")
+                
+            print(f"🎵 Music volume set to: {int(self.music_volume * 100)}%")
+        except Exception as e:
+            print(f"Error adjusting music volume: {e}")
+
+    def adjust_sound_effects_volume(self, value):
+        """Adjust sound effects volume only"""
+        if not PYGAME_AVAILABLE:
+            return
+        
+        try:
+            self.sound_effects_volume = float(value) / 100.0  # Convert from 0-100 to 0.0-1.0
+            
+            # Update sound effects volume
+            if hasattr(self, 'sounds'):
+                for sound in self.sounds.values():
+                    sound.set_volume(self.sound_effects_volume)
+            
+            # Update the percentage label
+            if hasattr(self, 'sfx_volume_label'):
+                self.sfx_volume_label.config(text=f"{int(self.sound_effects_volume * 100)}%")
+                
+            print(f"🔊 Sound effects volume set to: {int(self.sound_effects_volume * 100)}%")
+        except Exception as e:
+            print(f"Error adjusting sound effects volume: {e}")
+
+    def load_sound_effects(self):
+        """Load sound effects for the game"""
+        if not PYGAME_AVAILABLE:
+            print("❌ Cannot load sound effects - pygame not available")
+            self.sounds = {}
+            return
+        
+        try:
+            # Get the directory where the script is located
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            # Load fishing sound effect
+            fishing_sound_path = os.path.join(base_dir, "fishing_sound.mp3")
+            
+            if os.path.exists(fishing_sound_path):
+                fishing_sound = pygame.mixer.Sound(fishing_sound_path)
+                fishing_sound.set_volume(self.sound_effects_volume)  # Use sound effects volume
+                
+                self.sounds = {
+                    'fishing': fishing_sound
+                }
+                print("✅ Fishing sound effect loaded successfully")
+            else:
+                print("❌ fishing_sound.mp3 not found")
+                # List available sound files for debugging
+                sound_files = [f for f in os.listdir(base_dir) if f.lower().endswith(('.mp3', '.wav', '.ogg'))]
+                if sound_files:
+                    print(f"📁 Available sound files: {sound_files}")
+                else:
+                    print("📁 No sound files found in directory")
+                self.sounds = {}
+                    
+        except Exception as e:
+            print(f"❌ Error loading sound effects: {e}")
+            self.sounds = {}
+
+    def play_sound(self, sound_name):
+        """Play a sound effect at current sound effects volume"""
+        if not PYGAME_AVAILABLE or not hasattr(self, 'sounds'):
+            return
+        
+        try:
+            if sound_name in self.sounds:
+                # Ensure the sound is at the current sound effects volume before playing
+                self.sounds[sound_name].set_volume(self.sound_effects_volume)
+                self.sounds[sound_name].play()
+                print(f"🔊 Playing sound: {sound_name} at {int(self.sound_effects_volume * 100)}% volume")
+            else:
+                print(f"⚠️ Sound '{sound_name}' not found")
+        except Exception as e:
+            print(f"❌ Error playing sound '{sound_name}': {e}")
 
     def switch_to_start_adventure_gif(self):
         """Switch the main GIF to start_adventure.gif"""
@@ -1985,19 +2118,19 @@ class FishingGame:
     def generate_random_name(self):
         """Generate a random fisher name"""
         first_names = [
-            "Fisher", "Marina", "River", "Brook", "Captain", "Sailor", "Admiral", "Pike", 
+            "Fisher", "Marina", "River", "Brook", "Captain", "Sailor", "Admiral", "Pike", "Fresno", "Prophet",
             "Bass", "Finn", "Rod", "Reel", "Anchor", "Tide", "Storm", "Wave", "Current",
-            "Depth", "Coral", "Pearl", "Shell", "Drift", "Harbor", "Bay", "Coast",
-            "Reef", "Marlin", "Tuna", "Cod", "Salmon", "Trout", "Carp", "Minnow",
+            "Depth", "Coral", "Pearl", "Shell", "Drift", "Harbor", "Bay", "Coast", "Barnacle",
+            "Reef", "Marlin", "Tuna", "Cod", "Salmon", "Trout", "Carp", "Minnow", "Clitoris", "Maximus", "Octopus", "Squid", "Dolphin", "Seal", "Turtle", "Starfish", "Jellyfish", "Diddy",
             "Whale", "Shark", "Ray", "Eel", "Crab", "Lobster", "Shrimp", "Kelp","Cthulu","Stinky","Big","Fishy","Bubbles","Splash","Gills","Finley","Hook","Reelina","Tidal","Nautical","Muhammad","Jesus","Lil", "Truck", "Big Back", "Ford", "Tyler", "Bubba", "Koda", "Marco", "Duke", "Splash", "Gilligan", "Dick", "Philly", "Sarah", "Flounder"
         ]
         
         last_names = [
             "Angler", "Caster", "Fisher", "Netsman", "Hooker", "Baiter", "Reeler",
-            "Sailor", "Mariner", "Seaman", "Captain", "Navigator", "Helmsman",
+            "Sailor", "Mariner", "Seaman", "Captain", "Navigator", "Helmsman", "Portside",
             "Tidewatcher", "Stormrider", "Wavebreaker", "Deepdiver", "Surfcaster",
-            "Linecaster", "Rodmaster", "Baitlord", "Catchall", "Bigfish", "Longline",
-            "Sinker", "Floater", "Dragnetter", "Spearman", "Harpoon", "Tackle",
+            "Linecaster", "Rodmaster", "Baitlord", "Catchall", "Bigfish", "Longline", "Booty",
+            "Sinker", "Floater", "Dragnetter", "Spearman", "Harpoon", "Tackle", "Maximus", "Squarepants",
             "Lighthouse", "Portside", "Starboard", "Windward", "Leeward", "Offshore","Cthulu","Jackson","Texas", "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Martinez", "Davis", "Rodriguez", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Perez", "Big Back", "Buster", "Military", "Taylor", "Chimichanga"
         ]
         
@@ -4572,8 +4705,10 @@ class FishingGame:
         available_items = []
         for item_data in self.item_data['items']:
             item_type = item_data.get('item_type', '')
+            rarity = item_data.get('rarity', 0)  # ADD THIS LINE
+
             # Check if this item type is allowed at this location
-            if item_type in location.item_types:
+            if item_type in location.item_types and rarity > 0:  # Only consider items with positive rarity
                 available_items.append(item_data)
         
         if not available_items:
@@ -4751,17 +4886,63 @@ class FishingGame:
                     command=self.explore_interface)
             self.explore_btn.pack(side=tk.LEFT, padx=3)
 
-            # Game log
-            self.log_frame = tk.Frame(self.game_frame, bg="#87CEEB")
-            self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+            # Audio controls (place on the right side) - NOW WITH SEPARATE CONTROLS
+            if PYGAME_AVAILABLE:
+                audio_frame = tk.Frame(self.action_frame, bg="#87CEEB")
+                audio_frame.pack(side=tk.RIGHT, padx=10)
 
-            log_label = tk.Label(self.log_frame, text="Adventure Log:", 
-                            font=("Helvetica", 14, "bold"), bg="#87CEEB")
-            log_label.pack(anchor=tk.W)
+                # Music volume control (top row)
+                music_frame = tk.Frame(audio_frame, bg="#87CEEB")
+                music_frame.pack(pady=(0, 5))
 
-            self.game_log = tk.Text(self.log_frame, font=("Helvetica", 11), 
-                            height=12, state=tk.DISABLED)
-            self.game_log.pack(fill=tk.BOTH, expand=True)
+                music_label = tk.Label(music_frame, text="🎵 Music", 
+                                    font=("Helvetica", 10), bg="#87CEEB")
+                music_label.pack(side=tk.LEFT, padx=(0, 5))
+
+                # Music volume scale
+                from tkinter import ttk
+                self.music_volume_scale = ttk.Scale(music_frame, from_=0, to=100, 
+                                                orient=tk.HORIZONTAL, length=100, 
+                                                command=self.adjust_music_volume)
+                self.music_volume_scale.set(self.music_volume * 100)  # Set to current volume
+                self.music_volume_scale.pack(side=tk.LEFT)
+
+                # Music volume percentage label
+                self.music_volume_label = tk.Label(music_frame, text=f"{int(self.music_volume * 100)}%", 
+                                                font=("Helvetica", 10), bg="#87CEEB", width=4)
+                self.music_volume_label.pack(side=tk.LEFT, padx=(5, 0))
+
+                # Sound effects volume control (bottom row)
+                sfx_frame = tk.Frame(audio_frame, bg="#87CEEB")
+                sfx_frame.pack()
+
+                sfx_label = tk.Label(sfx_frame, text="🔊 SFX", 
+                                font=("Helvetica", 10), bg="#87CEEB")
+                sfx_label.pack(side=tk.LEFT, padx=(0, 5))
+
+                # Sound effects volume scale
+                self.sfx_volume_scale = ttk.Scale(sfx_frame, from_=0, to=100, 
+                                                orient=tk.HORIZONTAL, length=100, 
+                                                command=self.adjust_sound_effects_volume)
+                self.sfx_volume_scale.set(self.sound_effects_volume * 100)  # Set to current volume
+                self.sfx_volume_scale.pack(side=tk.LEFT)
+
+                # Sound effects volume percentage label
+                self.sfx_volume_label = tk.Label(sfx_frame, text=f"{int(self.sound_effects_volume * 100)}%", 
+                                            font=("Helvetica", 10), bg="#87CEEB", width=4)
+                self.sfx_volume_label.pack(side=tk.LEFT, padx=(5, 0))
+
+                # Game log
+                self.log_frame = tk.Frame(self.game_frame, bg="#87CEEB")
+                self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+                log_label = tk.Label(self.log_frame, text="Adventure Log:", 
+                                font=("Helvetica", 14, "bold"), bg="#87CEEB")
+                log_label.pack(anchor=tk.W)
+
+                self.game_log = tk.Text(self.log_frame, font=("Helvetica", 11), 
+                                height=12, state=tk.DISABLED)
+                self.game_log.pack(fill=tk.BOTH, expand=True)
 
             # Welcome message
             self.log_message(f"🎣 Welcome, {self.player.name}!")
@@ -4833,6 +5014,9 @@ class FishingGame:
             if not self.player.use_energy(1):
                 self.log_message("❌ Not enough energy to fish!")
                 return
+
+            # PLAY FISHING SOUND EFFECT
+            self.play_sound('fishing')
 
             result = self.go_fishing(selected_location)
 
@@ -4997,6 +5181,18 @@ class FishingGame:
             print(f"Error restarting: {e}")
             # Fallback to the old restart method if something goes wrong
             self.root.quit()
+
+    def quit_game(self):
+        """Clean shutdown including stopping music"""
+        if PYGAME_AVAILABLE:
+            try:
+                pygame.mixer.music.stop()
+                pygame.mixer.quit()
+                print("🎵 Music stopped")
+            except:
+                pass
+        
+        self.root.quit()
 
     def run(self):
             self.root.mainloop()
