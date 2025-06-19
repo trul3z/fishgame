@@ -138,7 +138,7 @@
     {
       "name": "Strange Fish Scale",
       "rarity": 400,
-      "gold_value": 85,
+      "gold_value": 250,
       "description": "A scale from a fish that doesn't look like any you've seen before.",
       "item_type": "treasure",
       "effect": "none",
@@ -152,7 +152,24 @@
       "item_type": "key",
       "effect": "none",
       "quantity": 1
+    },
+    {
+      "name": "Shovel",
+      "rarity": -1,
+      "gold_value": 3,
+      "description": "A sturdy shovel for digging.",
+      "item_type": "tool",
+      "effect": "none",
+      "quantity": 1
+    },
+    {
+      "name": "Hippie's Fishing Tips",
+      "rarity": -1,
+      "gold_value": 0,
+      "description": "A piece of paper with fishing tips from a cove hippie.",
+      "item_type": "consumable",
+      "effect": "increase luck by 1",
+      "quantity": 1
     }
-
   ]
 }

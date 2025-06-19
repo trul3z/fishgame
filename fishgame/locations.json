@@ -209,6 +209,21 @@
       "fishing license required": false,
       "Unlocked by default": false,
       "unlock condition": "None"
+    },
+    {
+      "name": "Kevin's Secret Spot",
+      "description": "A hidden fishing spot known only to Kevin, and his guy.",
+      "fish types": ["common","rare", "alien", "lake"],
+      "item types": ["junk", "treasure", "consumable"],
+      "enemy types": ["alien", "undead"],
+      "fish spawn chance": 0.7,
+      "item spawn chance": 0.1,
+      "gear spawn chance": 0.1,
+      "enemy spawn chance": 0.1,
+      "catch nothing chance": 0,
+      "fishing license required": false,
+      "Unlocked by default": false,
+      "unlock condition": "kevin_cocaine_trade"
     }
   ]
 }

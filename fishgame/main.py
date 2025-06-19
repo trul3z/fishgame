@@ -790,8 +790,6 @@ class FishingGame:
                     
                     elif (hasattr(self, 'current_gif') and 
                         self.current_gif == "koda_fishing"):
-                        # Just continue looping - no return statement, no actions  
-                        print("🔄 Koda fishing GIF looping infinitely...")
                         pass
             
             # Schedule next frame update (this happens for ALL GIFs now - moved outside the transitions)
@@ -1991,7 +1989,7 @@ class FishingGame:
             "Bass", "Finn", "Rod", "Reel", "Anchor", "Tide", "Storm", "Wave", "Current",
             "Depth", "Coral", "Pearl", "Shell", "Drift", "Harbor", "Bay", "Coast",
             "Reef", "Marlin", "Tuna", "Cod", "Salmon", "Trout", "Carp", "Minnow",
-            "Whale", "Shark", "Ray", "Eel", "Crab", "Lobster", "Shrimp", "Kelp","Cthulu","Stinky","Big","Fishy","Bubbles","Splash","Gills","Finley","Hook","Reelina","Tidal","Nautical","Muhammad","Jesus","Lil", "Truck", "Big Back", "Ford", "Tyler", "Bubba", "Koda", "Marco", "Duke", "Splash", "Gilligan", "Dick", "Philly"
+            "Whale", "Shark", "Ray", "Eel", "Crab", "Lobster", "Shrimp", "Kelp","Cthulu","Stinky","Big","Fishy","Bubbles","Splash","Gills","Finley","Hook","Reelina","Tidal","Nautical","Muhammad","Jesus","Lil", "Truck", "Big Back", "Ford", "Tyler", "Bubba", "Koda", "Marco", "Duke", "Splash", "Gilligan", "Dick", "Philly", "Sarah", "Flounder"
         ]
         
         last_names = [
@@ -4415,15 +4413,8 @@ class FishingGame:
         """Handle regular exploration results when no special events occur"""
         # Simple exploration results for now
         exploration_results = [
-            "You discover a hidden fishing spot with clearer water.",
-            "You find some interesting stones along the shoreline.",
-            "You observe the local wildlife and learn about the ecosystem.",
-            "You practice your casting technique in a quiet corner.",
-            "You enjoy the peaceful atmosphere and feel refreshed.",
-            "You notice subtle changes in the water currents.",
-            "You find a comfortable spot to rest and plan your next moves."
+            "There doesn't seem to be much here worth exploring.",
         ]
-        
         import random
         return random.choice(exploration_results)
 

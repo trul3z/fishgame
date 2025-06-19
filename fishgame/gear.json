@@ -229,6 +229,30 @@
         "luck": 4,
         "speed": 2
       }
+    },
+    {
+      "name": "Hippie Tank Top",
+      "gear_type": "torso",
+      "gold_value": 100,
+      "rarity": -1,
+      "description": "A tank top you dug up in the cove, it might be the cove hippie's.",
+      "quantity": 1,
+      "stat_bonus": {
+        "speed": 1,
+        "luck": 3
+      }
+    },
+    {
+      "name": "Mini Skirt",
+      "gear_type": "leg",
+      "gold_value": 60,
+      "rarity": -1,
+      "description": "A short skirt that allows for freedom of movement while fishing.",
+      "quantity": 1,
+      "stat_bonus": {
+        "speed": 2,
+        "luck": 1
+      } 
     }
   ]
 }
