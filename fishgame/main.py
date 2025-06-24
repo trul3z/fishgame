@@ -23,6 +23,9 @@ except ImportError as e:
     Image = None
     ImageTk = None
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 class Fish:
     def __init__(self, fish_data):
         self.name = fish_data["name"]
