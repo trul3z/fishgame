@@ -1,3 +1,5 @@
+Welcome to fishgame Alpha 0.0.0.9
+
 ## 🚀 Quick Start
 
 1. **Install Python 3.7+** from https://python.org
