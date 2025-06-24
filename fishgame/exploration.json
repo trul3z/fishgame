@@ -203,7 +203,7 @@
         "id": "exploring_the_shore",
         "title": "Guided by the Ring,",
         "dialogue": [
-          "You feel a strange pull from the Dead Hermit's Ring, guiding you towards the ocean shore.",
+          "You feel a strange pull from the Dead Hermit's Ring, guiding you towards a distant lighthouse.",
           "You decide to follow the ring's guidance and head towards the lighthouse pier."
         ],
         "actions": {
@@ -232,6 +232,7 @@
         }
       }
     ],
+
       "Lighthouse Pier": [
       {
         "id": "lighthouse_pier_encounter",
@@ -266,6 +267,59 @@
         "repeatable": false,
         "requirements": {
           "has_item": "Lighthouse Key"
+        }
+      }
+    ],
+      "Lighthouse Interior": [
+      {
+        "id": "eye_encounter",
+        "title": "👁️, Who's Eye is this?",
+        "gif_path": "spr_eye.gif",
+        "dialogue": [
+          "An eyeball slithers down the lighthouse stairs, and gives you a strange look.",
+          "👁️ Eye: \"Hey, you! Yeah, you!\"",
+          "Eye: \"I SEE you have my dad's ring!\"",
+          "Eye: \"Did ya steal it?\"",
+          "Eye: \"I don't care, my dad is a loser anyway.\"",
+          "Eye: \"Although, I could use that ring to get to the top of the lighthouse...\"",
+          "Eye: \"HEY! YOU WEREN'T SUPPOSED TO HEAR THAT!\"",
+          "Eye: \"Whatever, let's go to the TOP OF THE LIGHTHOUSE together.\""
+        ],
+        "actions": {
+          "unlock_location": "Top of Lighthouse"
+        },
+        "repeatable": false,
+        "requirements": {
+          "has_gear": "Dead Hermit's Ring"
+        }
+      }
+    ],
+    "Top of Lighthouse": [
+      {
+        "id": "step_through_the_portal",
+        "title": "Step Through the Portal?",
+        "gif_path": "spr_eye.gif",
+        "dialogue": [
+          "A portal hums with mysterious energy at the top of the lighthouse.",
+          "👁️ Eye: \"Hey, you wanna step through this portal?\"",
+          "Eye: \"I don't know where it goes, but it looks cool!\"",
+          "Step through the portal? Warning: This will end your game."
+        ],
+        "choices": [
+          {
+            "text": "Step through the portal",
+            "actions": {
+              "end_game": true
+            }
+          },
+          {
+            "text": "Don't step through the portal",
+            "actions": {}
+          }
+        ],
+        "repeatable": true,
+        "requirements": {
+          "has_gear": "Dead Hermit's Ring"
         }
       }
     ],
@@ -355,6 +409,35 @@
         "repeatable": true,
         "requirements": {}
       }
-      ]
-    }
+    ],
+    "Crystal Lake": [
+      {
+        "id": "gerg_encounter",
+        "title": "Do You Like My Shoes?",
+        "dialogue": [
+          "You take in the serenity of the lake, but your peace is interrupted by a creature emerging from the center of the lake.",
+          "🐸 Gerg: \"Hey, I'm Gerg, do you like my shoes?\""
+        ],
+        "choices": [
+          {
+            "text": "Yes, I love your shoes!",
+            "actions": {
+              "add_gear": "Gerg's Shoes"
+            },
+            "response": 
+              "Gerg: \"Thanks! I made them myself, I think they would look better on you than me. Gerg hands you his shoes with a smile and sinks back into the lake."      
+          },
+          {
+            "text": "No, I don't like your shoes.",
+            "actions": {},
+            "response": [
+              "Gerg: \"Oh, that's too bad. I thought they were pretty cool. Gerg shrugs and sinks back into the lake."
+            ]
+          }
+        ],
+        "repeatable": false,
+        "requirements": {}
+      }
+    ]
   }
+}

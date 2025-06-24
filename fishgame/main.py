@@ -71,6 +71,7 @@ class Location:
         self.fishing_license_required = location_data["fishing license required"]
         self.unlocked_by_default = location_data["Unlocked by default"]
         self.unlock_condition = location_data["unlock condition"]
+        self.music = location_data.get("music", None)  # Optional music for this location
     
     def is_unlocked(self, player_trades_completed):
         """Check if this location is available to the player"""
@@ -84,6 +85,25 @@ class Location:
         
         return False
     
+    def play_music(self, game):
+        """Play this location's music"""
+        if not self.music or not PYGAME_AVAILABLE:
+            return
+        
+        # Check if this music is already playing
+        if hasattr(game, 'current_music') and game.current_music == self.music:
+            return  # Don't restart same music
+        
+        try:
+            pygame.mixer.music.stop()
+            pygame.mixer.music.load(self.music)
+            pygame.mixer.music.set_volume(game.music_volume)
+            pygame.mixer.music.play(-1)
+            game.current_music = self.music
+            print(f"🎵 Playing {self.music} for {self.name}")
+        except Exception as e:
+            print(f"❌ Error playing music for {self.name}: {e}")
+
     def __str__(self):
         return f"{self.name} - Fish: {', '.join(self.fish_types)} (Fish chance: {self.fish_spawn_chance})"
 
@@ -281,8 +301,8 @@ class Player:
         # Basic stats
         self.health = 20
         self.max_health = 20
-        self.gold = 1000  
-        self.energy = 150 
+        self.gold = 200  
+        self.energy = 20 
         self.max_energy = 100000000
         self.level = 1
         self.xp = 0
@@ -615,12 +635,12 @@ class FishingGame:
         self.gif_running = False
         self.music_volume = 0.5
         self.sound_effects_volume = 0.8
+        self.current_music = None
         # Start background music
         self.start_background_music()
         self.load_sound_effects()
         self.create_widgets()
         self.load_json_data()
-
         self.player_completed_explorations = []
 
     def create_widgets(self):
@@ -2974,7 +2994,7 @@ class FishingGame:
                 messagebox.showwarning("No Valid Gear", "No valid gear selected to equip!")
         
         # Refresh displays
-        self.refresh_gear_window()
+        self.gear_window.destroy()
         self.update_player_info()
 
     def unequip_multiple_gear(self):
@@ -3048,7 +3068,7 @@ class FishingGame:
                 messagebox.showwarning("No Valid Gear", "No valid gear selected to unequip!")
         
         # Refresh displays
-        self.refresh_gear_window()
+        self.gear_window.destroy()
         self.update_player_info()
 
     def equip_all_unequipped_gear(self):
@@ -4359,7 +4379,7 @@ class FishingGame:
             self.location_var.set(available_locations[0])
 
     def show_dialogue_window(self, event):
-        """Show dialogue window with optional GIF for hermit encounters"""
+        """Show dialogue window with optional choices and GIF support"""
         if not hasattr(self, 'player') or self.player is None:
             return
 
@@ -4380,7 +4400,7 @@ class FishingGame:
         main_frame = tk.Frame(dialogue_window, bg="#2C3E50")
         main_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
 
-        # Smaller title at the top
+        # Title
         title_label = tk.Label(main_frame, text=event.get('title', 'Dialogue'),
                             font=("Helvetica", 14, "bold"), fg="#ECF0F1", bg="#2C3E50")
         title_label.pack(pady=(0, 20))
@@ -4408,7 +4428,6 @@ class FishingGame:
         dialogue_lines = event.get('dialogue', [])
         if dialogue_lines:
             for line in dialogue_lines:
-                # Format dialogue with speaker formatting
                 if ':' in line:
                     speaker, text = line.split(':', 1)
                     text_widget.insert(tk.END, f"{speaker.strip()}:", "speaker")
@@ -4416,40 +4435,75 @@ class FishingGame:
                 else:
                     text_widget.insert(tk.END, f"{line}\n\n")
 
-        # Configure speaker tag for better formatting
+        # Configure speaker tag
         text_widget.tag_configure("speaker", foreground="#3498DB", font=("Helvetica", 16, "bold"))
-
-        # Make text read-only
         text_widget.config(state=tk.DISABLED)
 
-        # Right side - GIF (if specified in JSON)
+        # Right side - GIF (if specified)
         if gif_path:
             try:
-                # Load GIF frames
                 gif_frames = self.load_gif_frames(gif_path)
                 if gif_frames:
-                    # Create frame for GIF on the right
                     gif_frame = tk.Frame(content_container, bg="#2C3E50")
                     gif_frame.pack(side=tk.RIGHT, fill=tk.Y)
                     
-                    # Create label for GIF
                     gif_label = tk.Label(gif_frame, bg="#2C3E50")
                     gif_label.pack(anchor=tk.N, pady=(20, 0))
                     
-                    # Start GIF animation
                     self.gif_running = True
                     self.animate_gif_in_dialogue(gif_label, gif_frames, delay=100)
             except Exception as e:
                 print(f"Error setting up GIF '{gif_path}': {e}")
 
-        # Button frame at bottom
+        # Check if this event has choices
+        choices = event.get('choices', [])
+        
+        if choices:
+            # Show choice buttons instead of continue button
+            self.show_dialogue_choices(main_frame, dialogue_window, choices, text_widget)
+        else:
+            # Show simple continue button for non-interactive dialogue
+            self.show_continue_button(main_frame, dialogue_window)
+
+    def show_dialogue_choices(self, main_frame, dialogue_window, choices, text_widget):
+        """Display choice buttons for interactive dialogue"""
+        choice_frame = tk.Frame(main_frame, bg="#2C3E50")
+        choice_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        choice_label = tk.Label(choice_frame, text="Choose your response:",
+                            font=("Helvetica", 14, "bold"), fg="#ECF0F1", bg="#2C3E50")
+        choice_label.pack(pady=(0, 10))
+        
+        # Create buttons for each choice
+        for i, choice in enumerate(choices):
+            choice_text = choice.get('text', f'Choice {i+1}')
+            
+            # Check if choice is available based on requirements
+            available = self.check_choice_requirements(choice)
+            
+            # Create button with appropriate styling
+            if available:
+                btn_color = "#3498DB"
+                btn_state = tk.NORMAL
+            else:
+                btn_color = "#7F8C8D"
+                btn_state = tk.DISABLED
+                choice_text += " [Requirements not met]"
+            
+            choice_btn = tk.Button(choice_frame, text=choice_text,
+                                font=("Helvetica", 12), bg=btn_color, fg="white",
+                                command=lambda c=choice: self.handle_choice_selection(c, dialogue_window, text_widget),
+                                state=btn_state, wraplength=400, justify=tk.LEFT)
+            choice_btn.pack(fill=tk.X, pady=2, padx=20)
+
+    def show_continue_button(self, main_frame, dialogue_window):
+        """Show simple continue button for non-interactive dialogue"""
         button_frame = tk.Frame(main_frame, bg="#2C3E50")
         button_frame.pack(fill=tk.X, pady=(10, 0))
 
-        # Continue button
         def close_dialogue():
             if hasattr(self, 'gif_running'):
-                self.gif_running = False  # Stop GIF animation
+                self.gif_running = False
             dialogue_window.destroy()
 
         continue_button = tk.Button(button_frame, text="Continue",
@@ -4458,19 +4512,89 @@ class FishingGame:
                                 bg="#3498DB", fg="white", padx=30, pady=10)
         continue_button.pack(side=tk.RIGHT)
 
-        # Handle window close
-        def on_window_close():
-            if hasattr(self, 'gif_running'):
-                self.gif_running = False
+    def check_choice_requirements(self, choice):
+        """Check if a dialogue choice's requirements are met"""
+        requirements = choice.get('requirements', {})
+        if not requirements:
+            return True
+        
+        # Check gold requirement
+        if 'min_gold' in requirements:
+            if self.player.gold < requirements['min_gold']:
+                return False
+        
+        # Check level requirement
+        if 'min_level' in requirements:
+            if self.player.level < requirements['min_level']:
+                return False
+        
+        # Check stats requirements
+        if 'min_luck' in requirements:
+            player_stats = self.player.get_total_stats()
+            if player_stats.get('luck', 0) < requirements['min_luck']:
+                return False
+        
+        # Add more requirement checks as needed
+        return True
+
+    def handle_choice_selection(self, choice, dialogue_window, text_widget):
+        """Handle when a player selects a dialogue choice"""
+        # Execute choice actions
+        actions = choice.get('actions', {})
+        self.execute_choice_actions(actions)
+        
+        # Show response text
+        response = choice.get('response', '')
+        if response:
+            text_widget.config(state=tk.NORMAL)
+            text_widget.insert(tk.END, f"\n{response}\n")
+            text_widget.config(state=tk.DISABLED)
+            text_widget.see(tk.END)
+        
+        # Update player info
+        self.update_player_info()
+        
+        # Close dialogue after a delay
+        self.root.after(3000, lambda: self.close_choice_dialogue(dialogue_window))
+
+    def execute_choice_actions(self, actions):
+        """Execute actions from dialogue choices"""
+        if 'remove_gold' in actions:
+            gold_cost = actions['remove_gold']
+            self.player.gold -= gold_cost
+            self.log_message(f"💰 Spent {gold_cost} gold")
+        
+        if 'add_gear' in actions:
+            gear_name = actions['add_gear']
+            for gear_data in self.gear_data['gear']:
+                if gear_data['name'] == gear_name:
+                    gear_item = Gear(gear_data)
+                    self.player.add_gear(gear_item)
+                    self.log_message(f"🎁 Received: {gear_name}!")
+                    break
+            else:
+                self.log_message(f"⚠️ Error: Gear '{gear_name}' not found in gear.json!")
+        
+        if 'add_item' in actions:
+            item_name = actions['add_item']
+            for item_data in self.item_data['items']:
+                if item_data['name'] == item_name:
+                    item = Item(item_data)
+                    self.player.add_item(item)
+                    self.log_message(f"🎁 Received: {item_name}!")
+                    break
+
+        if 'end_game' in actions and actions['end_game']:
+            self.player.health = 0  # Trigger game over condition
+            self.log_message("🌀 You stepped through the portal and vanished from this world...")
+            self.root.after(2000, self.show_game_over_screen)  # Use existing method
+
+    def close_choice_dialogue(self, dialogue_window):
+        """Close dialogue window after choice is made"""
+        if hasattr(self, 'gif_running'):
+            self.gif_running = False
+        if dialogue_window.winfo_exists():
             dialogue_window.destroy()
-
-        dialogue_window.protocol("WM_DELETE_WINDOW", on_window_close)
-
-        # Center the window
-        dialogue_window.update_idletasks()
-        x = (dialogue_window.winfo_screenwidth() // 2) - (dialogue_window.winfo_reqwidth() // 2)
-        y = (dialogue_window.winfo_screenheight() // 2) - (dialogue_window.winfo_reqheight() // 2)
-        dialogue_window.geometry(f"+{x}+{y}")
 
     def load_gif_frames(self, gif_path):
         """Load all frames from an animated GIF"""
@@ -4844,6 +4968,14 @@ class FishingGame:
                                             values=available_locations, state="readonly", width=15)
             self.location_dropdown.pack(side=tk.LEFT)
 
+            # Bind location dropdown to change handler
+            self.location_dropdown.bind('<<ComboboxSelected>>', self.handle_location_change)
+            
+            # Set initial location and music
+            initial_location = self.location_var.get()
+            self.handle_location_change()  # This will start the initial music
+
+
             # Fishing button
             self.fish_btn = tk.Button(self.action_frame, text="🎣 Go Fishing", 
                             font=("Helvetica", 14), bg="#2196F3", fg="white",
@@ -4937,11 +5069,11 @@ class FishingGame:
                 self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
                 log_label = tk.Label(self.log_frame, text="Adventure Log:", 
-                                font=("Helvetica", 14, "bold"), bg="#87CEEB")
+                                    font=("Helvetica", 14, "bold"), bg="#87CEEB")
                 log_label.pack(anchor=tk.W)
 
                 self.game_log = tk.Text(self.log_frame, font=("Helvetica", 11), 
-                                height=12, state=tk.DISABLED)
+                                    height=12, state=tk.DISABLED)
                 self.game_log.pack(fill=tk.BOTH, expand=True)
 
             # Welcome message
@@ -4970,6 +5102,19 @@ class FishingGame:
                     available.append(location.name)
 
         return available if available else ["Village Pond"]
+
+    def handle_location_change(self, event=None):
+        """Handle location dropdown change"""
+        selected_location_name = self.location_var.get()
+        
+        # Find the location object
+        for loc_data in self.location_data['locations']:
+            if loc_data['name'] == selected_location_name:
+                location = Location(loc_data)
+                location.play_music(self)  # Play this location's music
+                break
+        
+        self.log_message(f"🗺️ Moved to {selected_location_name}")
 
     def fishing_interface(self):
         """Handle fishing - costs 1 energy"""

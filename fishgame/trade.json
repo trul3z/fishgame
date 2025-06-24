@@ -29,7 +29,7 @@
       "type": "New Location",
       "effect": "Unlock a random new fishing location",
       "gold_value": 200,
-      "quantity": 20,
+      "quantity": 5,
       "level_requirement": 1,
       "trigger": {
         "action": "unlock_location",

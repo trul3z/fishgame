@@ -231,6 +231,18 @@
       }
     },
     {
+      "name": "Dead Hermit's Tunic",
+      "gear_type": "torso",
+      "gold_value": 10,
+      "rarity": -1,
+      "description": "A simple tunic worn by the village hermit, it has a calming aura.",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 1,
+        "luck": 3
+      }
+    },
+    {
       "name": "Hippie Tank Top",
       "gear_type": "torso",
       "gold_value": 100,
@@ -250,9 +262,22 @@
       "description": "A short skirt that allows for freedom of movement while fishing.",
       "quantity": 1,
       "stat_bonus": {
-        "speed": 2,
+        "speed": 3,
         "luck": 1
       } 
+    },
+    {
+      "name": "Gerg's Shoes",
+      "gear_type": "foot",
+      "gold_value": 80,
+      "rarity": -1,
+      "description": "Shoes that belonged to Gerg, they are quite soggy.",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 2,
+        "speed": 2,
+        "attack": 2
+      }
     }
   ]
 }

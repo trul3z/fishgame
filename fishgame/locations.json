@@ -3,6 +3,7 @@
     {
       "name": "Village Pond",
       "description": "A peaceful pond near the village where children learn to fish",
+      "music": "pond.mp3",
       "fish types": ["common"],
       "item types": ["junk", "consumable"],
       "enemy types": ["common"],
@@ -18,6 +19,7 @@
     {
       "name": "Village Well",
       "description": "A deep well in the village, rumored to be home to magical fish",
+      "music": "pond.mp3",
       "fish types": ["common"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "undead"],
@@ -33,6 +35,7 @@
     {
       "name": "Village Pond Depths",
       "description": "A deeper section of the village pond, home to larger fish",
+      "music": "pond.mp3",
       "fish types": ["common", "rare"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "rare"],
@@ -48,6 +51,7 @@
     {
       "name": "Village Secret Cove",
       "description": "A hidden cove near the village, known for its rare fish",
+      "music": "pond.mp3",
       "fish types": ["rare", "lake"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "rare"],
@@ -63,6 +67,7 @@
     {
       "name": "Ocean Shore",
       "description": "A sandy beach where the ocean meets the land, teeming with life",
+      "music": "lighthouse loop 2.mp3",
       "fish types": ["rare", "shore"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "beach", "undead"],
@@ -78,6 +83,7 @@
     {
       "name": "Lighthouse Pier",
       "description": "A pier near the lighthouse, the Dead Hermit's Ring guided you here",
+      "music": "Wrong Frequency Loop.mp3",
       "fish types": ["rare", "shore"],
       "item types": ["consumable", "key"],
       "enemy types": ["beach", "undead"],
@@ -93,6 +99,7 @@
     {
       "name": "Lighthouse Interior",
       "description": "The Hermit's Lighthouse, a place of mystery and secrets",
+      "music": "Wrong Frequency Loop.mp3",
       "fish types": ["rare", "alien"],
       "item types": ["treasure", "consumable"],
       "enemy types": ["alien", "undead"],
@@ -106,8 +113,25 @@
       "unlock condition": "open_lighthouse_door"
     },
     {
+      "name": "Top of Lighthouse",
+      "description": "A Portal Hums with mysterious Energy, the top of the lighthouse",
+      "music": "lighthouse loop 2.mp3.mp3",
+      "fish types": ["rare", "alien"],
+      "item types": ["treasure", "consumable"],
+      "enemy types": ["alien", "undead"],
+      "fish spawn chance": 0,
+      "item spawn chance": 0,
+      "gear spawn chance": 0,
+      "enemy spawn chance": 0,
+      "catch nothing chance": 1,
+      "fishing license required": false,
+      "Unlocked by default": false,
+      "unlock condition": "eye_encounter"
+    },
+    {
       "name": "Riverbank",
       "description": "A calm riverbank where fish gather to feed",
+      "music": "mysterylake.mp3",
       "fish types": ["common", "river"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "river"],
@@ -123,6 +147,7 @@
     {
       "name": "Coral Reef",
       "description": "A vibrant coral reef filled with colorful fish and hidden treasures",
+      "music": "mysterylake.mp3",
       "fish types": ["shore", "reef"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "shore", "beach"],
@@ -168,6 +193,7 @@
     {
       "name": "Crystal Lake",
       "description": "A serene lake in the mountains, the fox knows a good fishing spot when he sees one",
+      "music": "mysterylake.mp3",
       "fish types": ["rare", "lake"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["common", "lake"],
@@ -213,6 +239,7 @@
     {
       "name": "Kevin's Secret Spot",
       "description": "A hidden fishing spot known only to Kevin, and his guy.",
+      "music": "kevin.mp3",
       "fish types": ["common","rare", "alien", "lake"],
       "item types": ["junk", "treasure", "consumable"],
       "enemy types": ["alien", "undead"],
