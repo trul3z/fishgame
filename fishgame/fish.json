@@ -181,6 +181,18 @@
       "fish_effect": "+1 attack when held"
     },
     {
+      "name": "Lake Sturgeon",
+      "rarity": 800,
+      "type": "lake",
+      "min_size": 20,
+      "max_size": 30,
+      "avg_size": 25,
+      "gold_value": 450,
+      "food_value": 6,
+      "description": "A prehistoric fish with a bony body and a long snout, known for its roe",
+      "fish_effect": "none"
+    },
+    {
       "name": "Muskellunge",
       "rarity": 999,
       "type": "lake",
@@ -193,6 +205,43 @@
       "fish_effect": "+2 attack when held"
     },
     {
+      "name": "Colorful Fish",
+      "rarity": 100,
+      "type": "reef",
+      "min_size": 1,
+      "max_size": 3,
+      "avg_size": 2,
+      "gold_value": 55,
+      "food_value": 2,
+      "description": "A small, vibrant fish that adds color to the reef",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Butterflyfish",
+      "rarity": 400,
+      "type": "reef",
+      "min_size": 2,
+      "max_size": 4,
+      "avg_size": 3,
+      "gold_value": 60,
+      "food_value": 1,
+      "description": "A striking fish with black and yellow stripes, known for its beauty",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Blue Tang",
+      "rarity": 500,
+      "type": "reef",
+      "min_size": 3,
+      "max_size": 6,
+      "avg_size": 4.5,
+      "gold_value": 90,
+      "food_value": 2,
+      "description": "A vibrant blue fish with a yellow tail, known for its playful nature",
+      "fish_effect": "+1 speed when held"
+    },
+
+    {
       "name": "Coral Clownfish",
       "rarity": 400,
       "type": "reef",
@@ -203,6 +252,42 @@
       "food_value": 1,
       "description": "A small, colorful fish that lives among the coral reefs",
       "fish_effect": "none"
+    },
+    {
+      "name": "Angelfish",
+      "rarity": 500,
+      "type": "reef",
+      "min_size": 3,
+      "max_size": 5,
+      "avg_size": 4,
+      "gold_value": 80,
+      "food_value": 2,
+      "description": "A beautiful fish with long, flowing fins and a graceful swimming style",
+      "fish_effect": "none"
+    },
+    {
+      "name": "Lionfish",
+      "rarity": 600,
+      "type": "reef",
+      "min_size": 4,
+      "max_size": 8,
+      "avg_size": 6,
+      "gold_value": 100,
+      "food_value": 0,
+      "description": "A venomous fish with long, spiky fins, known for its beauty",
+      "fish_effect": "+1 attack when held"
+    },
+    {
+      "name": "Parrotfish",
+      "rarity": 600,
+      "type": "reef",
+      "min_size": 4,
+      "max_size": 8,
+      "avg_size": 6,
+      "gold_value": 120,
+      "food_value": 2,
+      "description": "A fish with a beak-like mouth, known for its vibrant colors and ability to eat coral",
+      "fish_effect": "+1 defense when held"
     },
     {
       "name": "Bluefish",
@@ -217,7 +302,7 @@
       "fish_effect": "+1 speed when held"
     },
     {
-      "name": "Freshwater Stingray",
+      "name": "Stingray",
       "rarity": 300,
       "type": "rare",
       "min_size": 2,
@@ -225,7 +310,7 @@
       "avg_size": 3.5,
       "gold_value": 70,
       "food_value": 2,
-      "description": "A flat-bodied fish with a long tail and a venomous barb, found in freshwater lakes",
+      "description": "A flat-bodied fish with a long tail and a venomous barb",
       "fish_effect": "+1 defense when held"
     },
     {
@@ -323,6 +408,18 @@
       "food_value": 10,
       "description": "A ghostly eel that swims through the water like a wisp of smoke",
       "fish_effect": "+2 speed when held"
+    },
+    {
+      "name": "Godfish",
+      "rarity": 999,
+      "type": "rare",
+      "min_size": 50,
+      "max_size": 100,
+      "avg_size": 75,
+      "gold_value": 5000,
+      "food_value": 100,
+      "description": "A mythical fish of immense size and power, said to grant wishes to those who catch it",
+      "fish_effect": "+10 luck when held"
     },
     {
       "name": "Pike",

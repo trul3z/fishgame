@@ -278,6 +278,89 @@
         "speed": 2,
         "attack": 2
       }
+    },
+    {
+      "name": "Flaming Rod",
+      "gear_type": "rod",
+      "gold_value": 400,
+      "rarity": 600,
+      "description": "A real hot rod, this should definitely catch some attention.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 5,
+        "speed": 2
+      }
+    },
+    {
+      "name": "Spiky Shoes",
+      "gear_type": "foot",
+      "gold_value": 150,
+      "rarity": 700,
+      "description": "Shoes with spikes that provide extra grip and stomping power.",
+      "quantity": 1,
+      "stat_bonus": {
+        "speed": 3,
+        "attack": 3
+      }
+    },
+    {
+      "name": "Ring of Wonder",
+      "gear_type": "ring",
+      "gold_value": 600,
+      "rarity": 800,
+      "description": "It's wonderful.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 5,
+        "defense": 2
+      }
+    },
+    {
+      "name": "Fish Bone Necklace",
+      "gear_type": "necklace",
+      "gold_value": 250,
+      "rarity": 500,
+      "description": "A necklace made from fish bones, said to bring good luck to fishermen.",
+      "quantity": 1,
+      "stat_bonus": {
+        "luck": 4,
+        "defense": 1
+      }
+    },
+    {
+      "name": "Tough Glove",
+      "gear_type": "glove",
+      "gold_value": 100,
+      "rarity": 350,
+      "description": "A glove that provides extra grip and protection.",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 2,
+        "attack": 1
+      }
+    },
+    {
+      "name": "Shank",
+      "gear_type": "knife",
+      "gold_value": 20,
+      "rarity": 100,
+      "description": "Deadlier than it looks, your enemies will never see it coming.",
+      "quantity": 1,
+      "stat_bonus": {
+        "attack": 3
+      }
+    },
+    {
+      "name": "Cloak of Shadows",
+      "gear_type": "head",
+      "gold_value": 300,
+      "rarity": 985,
+      "description": "A cloak that grants the wearer the ability to blend into the shadows.",
+      "quantity": 1,
+      "stat_bonus": {
+        "defense": 6,
+        "speed": 3
+      }
     }
   ]
 }

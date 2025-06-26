@@ -170,6 +170,33 @@
       "item_type": "consumable",
       "effect": "increase luck by 1",
       "quantity": 1
+    },
+    {
+      "name": "Sashimi",
+      "rarity": 800,
+      "gold_value": 20,
+      "description": "Yummy.",
+      "item_type": "consumable",
+      "effect": "restore 10 health",  
+      "quantity": 5
+    },
+    {
+      "name": "Lucky Fin Soup",
+      "rarity": 950,
+      "gold_value": 250,
+      "description": "A rare delicacy thought to be lost.",
+      "item_type": "consumable",
+      "effect": "increase luck by 5",
+      "quantity": 3
+    },
+    {
+      "name": "Fishing Net",
+      "rarity": 600,
+      "gold_value": 150,
+      "description": "A net for catching fish.",
+      "item_type": "consumable",
+      "effect": "increase catch rate for the next 20 catches",
+      "quantity": 1
     }
   ]
 }
